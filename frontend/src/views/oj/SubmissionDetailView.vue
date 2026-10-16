@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import { CopyDocument } from '@element-plus/icons-vue'
 
 import SubmissionResult from '@/components/SubmissionResult.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import { useSubmissionPolling } from '@/composables/useSubmissionPolling'
 import { useSiteStore } from '@/stores/site'
 import { useUserStore } from '@/stores/user'
@@ -43,35 +44,42 @@ async function copyCode() {
 </script>
 
 <template>
-  <div v-loading="loading" class="submission-page">
+  <div class="submission-page">
     <el-result v-if="error" icon="warning" title="无法查看该提交" :sub-title="error">
       <template #extra>
         <el-button type="primary" @click="router.push({ name: 'submissions' })">返回提交记录</el-button>
       </template>
     </el-result>
 
+    <el-skeleton v-else-if="loading" animated :rows="8" />
+
     <template v-else-if="submission">
-      <el-card shadow="never">
-        <template #header>
-          <div class="header">
-            <span class="header__title">提交 #{{ submission.id }}</span>
-            <router-link :to="{ name: 'problem-detail', params: { id: submission.problem } }" class="link">
-              {{ submission.problem }}. {{ submission.problem_title }}
-            </router-link>
-          </div>
+      <PageHeader
+        :title="`提交 #${submission.id}`"
+        :crumbs="[{ text: '提交记录', to: '/submissions' }]"
+      >
+        <template #meta>
+          <router-link :to="{ name: 'problem-detail', params: { id: submission.problem } }" class="text-link problem">
+            {{ submission.problem }}. {{ submission.problem_title }}
+          </router-link>
         </template>
-        <el-descriptions :column="3" size="small" class="meta">
-          <el-descriptions-item v-if="userStore.isStaff" label="用户">{{ submission.username }}</el-descriptions-item>
-          <el-descriptions-item label="语言">{{ site.languageName(submission.language) }}</el-descriptions-item>
-          <el-descriptions-item label="提交时间">{{ formatDateTime(submission.created_at) }}</el-descriptions-item>
-        </el-descriptions>
+        <el-button @click="router.push({ name: 'problem-detail', params: { id: submission.problem } })">再做一次</el-button>
+      </PageHeader>
+
+      <div class="meta">
+        <div v-if="userStore.isStaff" class="meta__item"><span>用户</span><b>{{ submission.username }}</b></div>
+        <div class="meta__item"><span>语言</span><b>{{ site.languageName(submission.language) }}</b></div>
+        <div class="meta__item"><span>提交时间</span><b>{{ formatDateTime(submission.created_at) }}</b></div>
+      </div>
+
+      <el-card shadow="never" class="block">
         <SubmissionResult :submission="submission" />
       </el-card>
 
-      <el-card shadow="never">
+      <el-card shadow="never" class="block">
         <template #header>
           <div class="header">
-            <span class="header__title">代码</span>
+            <span>代码</span>
             <el-button link type="primary" :icon="CopyDocument" @click="copyCode">复制</el-button>
           </div>
         </template>
@@ -87,31 +95,34 @@ async function copyCode() {
 </template>
 
 <style scoped>
-.submission-page {
+.problem {
+  display: inline-block;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.meta {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-height: 300px;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-bottom: var(--oj-space-4);
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
+}
+
+.meta__item b {
+  margin-left: 8px;
+  color: var(--oj-text);
+  font-weight: 500;
+}
+
+.block {
+  margin-bottom: var(--oj-space-4);
 }
 
 .header {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-}
-
-.header__title {
-  font-weight: 600;
-}
-
-.link {
-  color: var(--el-color-primary);
-  text-decoration: none;
-}
-
-.meta {
-  margin-bottom: 12px;
 }
 </style>

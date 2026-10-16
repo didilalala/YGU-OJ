@@ -8,6 +8,7 @@ import { adminAssignmentApi } from '@/api/assignment'
 import { adminClassApi } from '@/api/classroom'
 import { ASSIGNMENT_STATUS } from '@/utils/assignment'
 import { formatDateTime } from '@/utils/judge'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -79,94 +80,82 @@ async function remove(row) {
 </script>
 
 <template>
-  <el-card shadow="never">
-    <template #header>
-      <div class="header">
-        <span class="header__title">作业</span>
-        <el-select
-          :model-value="classId"
-          placeholder="全部班级"
-          clearable
-          class="header__class"
-          @update:model-value="(v) => updateQuery({ class_id: v ?? null })"
-        >
-          <el-option v-for="item in classes" :key="item.id" :label="item.name" :value="item.id" />
-        </el-select>
-        <el-button
-          type="primary"
-          :icon="Plus"
-          @click="router.push({ name: 'admin-assignment-create', query: classId ? { class_id: classId } : {} })"
-        >
-          布置作业
-        </el-button>
-      </div>
-    </template>
+  <div>
+    <PageHeader title="作业">
+      <el-select
+        :model-value="classId"
+        placeholder="全部班级"
+        clearable
+        class="header__class"
+        @update:model-value="(v) => updateQuery({ class_id: v ?? null })"
+      >
+        <el-option v-for="item in classes" :key="item.id" :label="item.name" :value="item.id" />
+      </el-select>
+      <el-button
+        type="primary"
+        :icon="Plus"
+        @click="router.push({ name: 'admin-assignment-create', query: classId ? { class_id: classId } : {} })"
+      >
+        布置作业
+      </el-button>
+    </PageHeader>
+    <el-card shadow="never">
+      <el-table v-loading="loading" :data="assignments" empty-text="还没有作业">
+        <el-table-column label="作业" min-width="200">
+          <template #default="{ row }">
+            <router-link :to="{ name: 'admin-assignment-results', params: { id: row.id } }" class="link">
+              {{ row.title }}
+            </router-link>
+            <div class="muted">{{ row.class_name }} · {{ row.items.length }} 题 · 共 {{ row.total_score }} 分</div>
+          </template>
+        </el-table-column>
+        <el-table-column label="时间" width="200">
+          <template #default="{ row }">
+            <div class="muted">开始 {{ formatDateTime(row.start_time) }}</div>
+            <div class="muted">截止 {{ formatDateTime(row.end_time) }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="ASSIGNMENT_STATUS[row.status].type" size="small">{{ ASSIGNMENT_STATUS[row.status].label }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="已提交" width="100">
+          <template #default="{ row }">{{ row.submitted_count }} / {{ row.member_count }}</template>
+        </el-table-column>
+        <el-table-column label="发布" width="70">
+          <template #default="{ row }">
+            <el-switch :model-value="row.is_published" @update:model-value="(v) => togglePublished(row, v)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="160" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="router.push({ name: 'admin-assignment-results', params: { id: row.id } })">
+              成绩
+            </el-button>
+            <el-button link type="primary" @click="router.push({ name: 'admin-assignment-edit', params: { id: row.id } })">
+              编辑
+            </el-button>
+            <el-button link type="danger" @click="remove(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-table v-loading="loading" :data="assignments" empty-text="还没有作业">
-      <el-table-column label="作业" min-width="200">
-        <template #default="{ row }">
-          <router-link :to="{ name: 'admin-assignment-results', params: { id: row.id } }" class="link">
-            {{ row.title }}
-          </router-link>
-          <div class="muted">{{ row.class_name }} · {{ row.items.length }} 题 · 共 {{ row.total_score }} 分</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="时间" width="200">
-        <template #default="{ row }">
-          <div class="muted">开始 {{ formatDateTime(row.start_time) }}</div>
-          <div class="muted">截止 {{ formatDateTime(row.end_time) }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="90">
-        <template #default="{ row }">
-          <el-tag :type="ASSIGNMENT_STATUS[row.status].type" size="small">{{ ASSIGNMENT_STATUS[row.status].label }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="已提交" width="100">
-        <template #default="{ row }">{{ row.submitted_count }} / {{ row.member_count }}</template>
-      </el-table-column>
-      <el-table-column label="发布" width="70">
-        <template #default="{ row }">
-          <el-switch :model-value="row.is_published" @update:model-value="(v) => togglePublished(row, v)" />
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="160" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="router.push({ name: 'admin-assignment-results', params: { id: row.id } })">
-            成绩
-          </el-button>
-          <el-button link type="primary" @click="router.push({ name: 'admin-assignment-edit', params: { id: row.id } })">
-            编辑
-          </el-button>
-          <el-button link type="danger" @click="remove(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <el-pagination
-      v-if="total > PAGE_SIZE"
-      class="pagination"
-      layout="prev, pager, next, total"
-      :total="total"
-      :page-size="PAGE_SIZE"
-      :current-page="page"
-      @current-change="(p) => updateQuery({ page: p })"
-    />
-  </el-card>
+      <el-pagination
+        v-if="total > PAGE_SIZE"
+        class="pagination"
+        layout="prev, pager, next, total"
+        :total="total"
+        :page-size="PAGE_SIZE"
+        :current-page="page"
+        @current-change="(p) => updateQuery({ page: p })"
+      />
+    </el-card>
+  </div>
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.header__title {
-  margin-right: auto;
-  font-size: 16px;
-  font-weight: 600;
-}
 
 .header__class {
   width: 200px;

@@ -65,12 +65,12 @@ async function submit() {
     </template>
   </el-result>
 
-  <el-card v-else class="register-card" shadow="never">
-    <h2>注册</h2>
-    <p class="register-card__intro">
-      注册后即可参加公开竞赛、练习题目。在校学生请注册后，在右上角菜单中「绑定学号」。
-    </p>
-    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="submit">
+  <div v-else>
+    <div class="auth-head">
+      <h2>创建账号</h2>
+      <p>注册后即可参加公开竞赛、练习题目。</p>
+    </div>
+    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large" @submit.prevent="submit">
       <el-form-item label="用户名" prop="username">
         <el-input v-model="form.username" maxlength="32" autocomplete="username" placeholder="用于登录，不能是纯数字学号" />
       </el-form-item>
@@ -78,46 +78,57 @@ async function submit() {
         <el-input v-model="form.email" maxlength="254" autocomplete="email" />
       </el-form-item>
       <el-form-item label="密码" prop="password">
-        <el-input v-model="form.password" type="password" show-password autocomplete="new-password" />
+        <el-input v-model="form.password" type="password" show-password autocomplete="new-password" placeholder="至少 8 位" />
       </el-form-item>
       <el-form-item label="确认密码" prop="confirm">
         <el-input v-model="form.confirm" type="password" show-password autocomplete="new-password" />
       </el-form-item>
-      <el-button type="primary" native-type="submit" :loading="loading" class="register-card__submit">注册</el-button>
+      <el-button type="primary" native-type="submit" :loading="loading" class="auth-submit">注册</el-button>
     </el-form>
-    <p class="register-card__tip">
+    <p class="auth-hint">在校学生请先注册，登录后在右上角菜单中选择「绑定学号」。</p>
+    <p class="auth-foot">
       已有账号？
       <router-link :to="{ name: 'login', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">
         去登录
       </router-link>
     </p>
-  </el-card>
+  </div>
 </template>
 
 <style scoped>
-.register-card {
-  max-width: 440px;
-  margin: 40px auto;
+.auth-head h2 {
+  margin: 0 0 6px;
+  font-size: var(--oj-fs-xl);
+  letter-spacing: -0.01em;
 }
 
-.register-card h2 {
-  margin-top: 0;
+.auth-head p {
+  margin: 0 0 var(--oj-space-5);
+  color: var(--oj-text-3);
 }
 
-.register-card__intro {
-  margin: 0 0 16px;
-  color: var(--el-text-color-secondary);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.register-card__submit {
+.auth-submit {
   width: 100%;
+  margin-top: 4px;
 }
 
-.register-card__tip {
-  margin-bottom: 0;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+.auth-foot {
+  margin: var(--oj-space-5) 0 0;
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
+  text-align: center;
+}
+
+.auth-foot a {
+  font-weight: 600;
+}
+
+.auth-hint {
+  margin-top: var(--oj-space-4);
+  padding: 10px 12px;
+  border-radius: var(--oj-radius-sm);
+  background: var(--oj-surface-hover);
+  color: var(--oj-text-2);
+  font-size: var(--oj-fs-sm);
 }
 </style>

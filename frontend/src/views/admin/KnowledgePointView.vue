@@ -6,6 +6,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { adminKnowledgePointApi } from '@/api/adminProblem'
 import { problemApi } from '@/api/problem'
 import { buildKnowledgeTree, courseNames } from '@/utils/knowledgeTree'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const loading = ref(false)
 const points = ref([])
@@ -110,89 +111,77 @@ async function remove(point) {
 </script>
 
 <template>
-  <el-card shadow="never">
-    <template #header>
-      <div class="header">
-        <span class="header__title">知识点</span>
-        <el-select v-model="course" placeholder="全部课程" clearable class="header__course">
-          <el-option v-for="name in courses" :key="name" :label="name" :value="name" />
-        </el-select>
-        <el-button type="primary" :icon="Plus" @click="openCreate()">新增知识点</el-button>
-      </div>
-    </template>
+  <div>
+    <PageHeader title="知识点" subtitle="用于给题目打标签、按知识点筛选，以及统计学生的掌握情况">
+      <el-select v-model="course" placeholder="全部课程" clearable class="header__course">
+        <el-option v-for="name in courses" :key="name" :label="name" :value="name" />
+      </el-select>
+      <el-button type="primary" :icon="Plus" @click="openCreate()">新增知识点</el-button>
+    </PageHeader>
+    <el-card shadow="never">
+      <p class="muted">知识点用于给题目打标签、按知识点筛选题目，以及统计学生的知识点掌握情况。</p>
 
-    <p class="muted">知识点用于给题目打标签、按知识点筛选题目，以及统计学生的知识点掌握情况。</p>
+      <el-tree
+        v-loading="loading"
+        :data="tree"
+        node-key="id"
+        default-expand-all
+        :expand-on-click-node="false"
+        empty-text="暂无知识点"
+        class="tree"
+      >
+        <template #default="{ data }">
+          <div class="node">
+            <span class="node__name">{{ data.name }}</span>
+            <el-tag v-if="data.course && !course" size="small" type="info" effect="plain">{{ data.course }}</el-tag>
+            <span class="node__actions">
+              <el-button link type="primary" size="small" @click="openCreate(data)">添加下级</el-button>
+              <el-button link type="primary" size="small" @click="openEdit(data)">编辑</el-button>
+              <el-button link type="danger" size="small" @click="remove(data)">删除</el-button>
+            </span>
+          </div>
+        </template>
+      </el-tree>
 
-    <el-tree
-      v-loading="loading"
-      :data="tree"
-      node-key="id"
-      default-expand-all
-      :expand-on-click-node="false"
-      empty-text="暂无知识点"
-      class="tree"
-    >
-      <template #default="{ data }">
-        <div class="node">
-          <span class="node__name">{{ data.name }}</span>
-          <el-tag v-if="data.course && !course" size="small" type="info" effect="plain">{{ data.course }}</el-tag>
-          <span class="node__actions">
-            <el-button link type="primary" size="small" @click="openCreate(data)">添加下级</el-button>
-            <el-button link type="primary" size="small" @click="openEdit(data)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="remove(data)">删除</el-button>
-          </span>
-        </div>
-      </template>
-    </el-tree>
-
-    <el-dialog v-model="dialog.visible" :title="dialog.editingId ? '编辑知识点' : '新增知识点'" width="460px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" @submit.prevent="save">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" maxlength="64" placeholder="如：循环、数组、指针" />
-        </el-form-item>
-        <el-form-item label="上级">
-          <el-tree-select
-            v-model="form.parent"
-            :data="parentOptions"
-            check-strictly
-            clearable
-            filterable
-            :render-after-expand="false"
-            placeholder="无（作为顶层知识点）"
-            class="full-width"
-            @update:model-value="onParentChange"
-          />
-        </el-form-item>
-        <el-form-item label="课程">
-          <el-autocomplete
-            v-model="form.course"
-            :fetch-suggestions="suggestCourses"
-            maxlength="64"
-            placeholder="如：C 语言程序设计"
-            class="full-width"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dialog.saving" @click="save">保存</el-button>
-      </template>
-    </el-dialog>
-  </el-card>
+      <el-dialog v-model="dialog.visible" :title="dialog.editingId ? '编辑知识点' : '新增知识点'" width="460px">
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" @submit.prevent="save">
+          <el-form-item label="名称" prop="name">
+            <el-input v-model="form.name" maxlength="64" placeholder="如：循环、数组、指针" />
+          </el-form-item>
+          <el-form-item label="上级">
+            <el-tree-select
+              v-model="form.parent"
+              :data="parentOptions"
+              check-strictly
+              clearable
+              filterable
+              :render-after-expand="false"
+              placeholder="无（作为顶层知识点）"
+              class="full-width"
+              @update:model-value="onParentChange"
+            />
+          </el-form-item>
+          <el-form-item label="课程">
+            <el-autocomplete
+              v-model="form.course"
+              :fetch-suggestions="suggestCourses"
+              maxlength="64"
+              placeholder="如：C 语言程序设计"
+              class="full-width"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="dialog.visible = false">取消</el-button>
+          <el-button type="primary" :loading="dialog.saving" @click="save">保存</el-button>
+        </template>
+      </el-dialog>
+    </el-card>
+  </div>
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.header__title {
-  margin-right: auto;
-  font-size: 16px;
-  font-weight: 600;
-}
 
 .header__course {
   width: 200px;

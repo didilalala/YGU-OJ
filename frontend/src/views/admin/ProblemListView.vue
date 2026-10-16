@@ -7,9 +7,11 @@ import { Plus, Search, Upload } from '@element-plus/icons-vue'
 import { adminProblemApi } from '@/api/adminProblem'
 import { problemApi } from '@/api/problem'
 import FpsImportDialog from '@/components/admin/FpsImportDialog.vue'
-import DifficultyTag from '@/components/DifficultyTag.vue'
-import { DIFFICULTIES, formatDateTime, passRate } from '@/utils/judge'
+import DifficultyBadge from '@/components/ui/DifficultyBadge.vue'
+import { DIFFICULTIES, formatDateTime, passRateValue } from '@/utils/judge'
 import { buildKnowledgeTree } from '@/utils/knowledgeTree'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import RateBar from '@/components/ui/RateBar.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -101,162 +103,147 @@ async function remove(row) {
 </script>
 
 <template>
-  <el-card shadow="never">
-    <template #header>
-      <div class="header">
-        <span class="header__title">题库</span>
-        <el-button :icon="Upload" @click="fpsVisible = true">导入 FPS</el-button>
-        <el-button type="primary" :icon="Plus" @click="router.push({ name: 'admin-problem-create' })">
-          新建题目
-        </el-button>
+  <div>
+    <PageHeader title="题库" :subtitle="total ? `共 ${total} 道题` : ''">
+      <el-button :icon="Upload" @click="fpsVisible = true">导入 FPS</el-button>
+      <el-button type="primary" :icon="Plus" @click="router.push({ name: 'admin-problem-create' })">新建题目</el-button>
+    </PageHeader>
+    <el-card shadow="never">
+      <div class="filters">
+        <el-input
+          v-model="keyword"
+          class="filters__keyword"
+          placeholder="题号或标题"
+          clearable
+          :prefix-icon="Search"
+          @keyup.enter="updateQuery({ keyword: keyword.trim() })"
+          @clear="updateQuery({ keyword: '' })"
+        />
+        <el-select
+          class="filters__item"
+          :model-value="query.mine"
+          @update:model-value="(v) => updateQuery({ mine: v })"
+        >
+          <el-option label="全部可见题目" value="" />
+          <el-option label="我创建的" value="1" />
+        </el-select>
+        <el-select
+          class="filters__item"
+          :model-value="query.is_public"
+          placeholder="公开状态"
+          clearable
+          @update:model-value="(v) => updateQuery({ is_public: v ?? '' })"
+        >
+          <el-option label="公开" value="1" />
+          <el-option label="私有" value="0" />
+        </el-select>
+        <el-select
+          class="filters__item"
+          :model-value="query.difficulty"
+          placeholder="难度"
+          clearable
+          @update:model-value="(v) => updateQuery({ difficulty: v || '' })"
+        >
+          <el-option v-for="(meta, value) in DIFFICULTIES" :key="value" :label="meta.label" :value="value" />
+        </el-select>
+        <el-tree-select
+          class="filters__item"
+          :model-value="query.knowledge_point"
+          :data="knowledgeTree"
+          placeholder="知识点"
+          check-strictly
+          clearable
+          filterable
+          :render-after-expand="false"
+          default-expand-all
+          @update:model-value="(v) => updateQuery({ knowledge_point: v ?? null })"
+        />
       </div>
-    </template>
 
-    <div class="filters">
-      <el-input
-        v-model="keyword"
-        class="filters__keyword"
-        placeholder="题号或标题"
-        clearable
-        :prefix-icon="Search"
-        @keyup.enter="updateQuery({ keyword: keyword.trim() })"
-        @clear="updateQuery({ keyword: '' })"
+      <el-table v-loading="loading" :data="problems" empty-text="没有符合条件的题目">
+        <el-table-column prop="id" label="题号" width="70" />
+        <el-table-column label="标题" min-width="200">
+          <template #default="{ row }">
+            <router-link
+              v-if="row.can_edit"
+              :to="{ name: 'admin-problem-edit', params: { id: row.id } }"
+              class="link"
+            >
+              {{ row.title }}
+            </router-link>
+            <span v-else>{{ row.title }}</span>
+            <el-tag v-if="row.is_template" size="small" type="info" class="tag">模板题</el-tag>
+            <div class="points">
+              <el-tag v-for="point in row.knowledge_points" :key="point.id" size="small" effect="plain">
+                {{ point.name }}
+              </el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="难度" width="80">
+          <template #default="{ row }"><DifficultyBadge :difficulty="row.difficulty" /></template>
+        </el-table-column>
+        <el-table-column label="测试数据" width="90">
+          <template #default="{ row }">
+            <el-tag v-if="row.has_test_cases" type="success" size="small" effect="plain">已上传</el-tag>
+            <el-tag v-else type="warning" size="small">未上传</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="通过率" width="140">
+          <template #default="{ row }">
+            <RateBar :value="passRateValue(row)" width="48px" :title="`${row.accepted_count} / ${row.submission_count}`" />
+          </template>
+        </el-table-column>
+        <el-table-column label="公开" width="70">
+          <template #default="{ row }">
+            <el-switch
+              :model-value="row.is_public"
+              :disabled="!row.can_edit"
+              @update:model-value="(value) => togglePublic(row, value)"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="创建者" width="110">
+          <template #default="{ row }">{{ row.created_by_name ?? '—' }}</template>
+        </el-table-column>
+        <el-table-column label="更新时间" width="160">
+          <template #default="{ row }">{{ formatDateTime(row.updated_at) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              v-if="row.can_edit"
+              link
+              type="primary"
+              @click="router.push({ name: 'admin-problem-edit', params: { id: row.id } })"
+            >
+              编辑
+            </el-button>
+            <el-button link type="primary" @click="router.push({ name: 'problem-detail', params: { id: row.id } })">
+              预览
+            </el-button>
+            <el-button v-if="row.can_edit" link type="danger" @click="remove(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        v-if="total > PAGE_SIZE"
+        class="pagination"
+        layout="prev, pager, next, total"
+        :total="total"
+        :page-size="PAGE_SIZE"
+        :current-page="query.page"
+        @current-change="(page) => updateQuery({ page })"
       />
-      <el-select
-        class="filters__item"
-        :model-value="query.mine"
-        @update:model-value="(v) => updateQuery({ mine: v })"
-      >
-        <el-option label="全部可见题目" value="" />
-        <el-option label="我创建的" value="1" />
-      </el-select>
-      <el-select
-        class="filters__item"
-        :model-value="query.is_public"
-        placeholder="公开状态"
-        clearable
-        @update:model-value="(v) => updateQuery({ is_public: v ?? '' })"
-      >
-        <el-option label="公开" value="1" />
-        <el-option label="私有" value="0" />
-      </el-select>
-      <el-select
-        class="filters__item"
-        :model-value="query.difficulty"
-        placeholder="难度"
-        clearable
-        @update:model-value="(v) => updateQuery({ difficulty: v || '' })"
-      >
-        <el-option v-for="(meta, value) in DIFFICULTIES" :key="value" :label="meta.label" :value="value" />
-      </el-select>
-      <el-tree-select
-        class="filters__item"
-        :model-value="query.knowledge_point"
-        :data="knowledgeTree"
-        placeholder="知识点"
-        check-strictly
-        clearable
-        filterable
-        :render-after-expand="false"
-        default-expand-all
-        @update:model-value="(v) => updateQuery({ knowledge_point: v ?? null })"
-      />
-    </div>
 
-    <el-table v-loading="loading" :data="problems" empty-text="没有符合条件的题目">
-      <el-table-column prop="id" label="题号" width="70" />
-      <el-table-column label="标题" min-width="200">
-        <template #default="{ row }">
-          <router-link
-            v-if="row.can_edit"
-            :to="{ name: 'admin-problem-edit', params: { id: row.id } }"
-            class="link"
-          >
-            {{ row.title }}
-          </router-link>
-          <span v-else>{{ row.title }}</span>
-          <el-tag v-if="row.is_template" size="small" type="info" class="tag">模板题</el-tag>
-          <div class="points">
-            <el-tag v-for="point in row.knowledge_points" :key="point.id" size="small" effect="plain">
-              {{ point.name }}
-            </el-tag>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="难度" width="80">
-        <template #default="{ row }"><DifficultyTag :difficulty="row.difficulty" /></template>
-      </el-table-column>
-      <el-table-column label="测试数据" width="90">
-        <template #default="{ row }">
-          <el-tag v-if="row.has_test_cases" type="success" size="small" effect="plain">已上传</el-tag>
-          <el-tag v-else type="warning" size="small">未上传</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="通过率" width="140">
-        <template #default="{ row }">
-          {{ passRate(row) }}
-          <span class="muted">（{{ row.accepted_count }}/{{ row.submission_count }}）</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="公开" width="70">
-        <template #default="{ row }">
-          <el-switch
-            :model-value="row.is_public"
-            :disabled="!row.can_edit"
-            @update:model-value="(value) => togglePublic(row, value)"
-          />
-        </template>
-      </el-table-column>
-      <el-table-column label="创建者" width="110">
-        <template #default="{ row }">{{ row.created_by_name ?? '—' }}</template>
-      </el-table-column>
-      <el-table-column label="更新时间" width="160">
-        <template #default="{ row }">{{ formatDateTime(row.updated_at) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="150" fixed="right">
-        <template #default="{ row }">
-          <el-button
-            v-if="row.can_edit"
-            link
-            type="primary"
-            @click="router.push({ name: 'admin-problem-edit', params: { id: row.id } })"
-          >
-            编辑
-          </el-button>
-          <el-button link type="primary" @click="router.push({ name: 'problem-detail', params: { id: row.id } })">
-            预览
-          </el-button>
-          <el-button v-if="row.can_edit" link type="danger" @click="remove(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <el-pagination
-      v-if="total > PAGE_SIZE"
-      class="pagination"
-      layout="prev, pager, next, total"
-      :total="total"
-      :page-size="PAGE_SIZE"
-      :current-page="query.page"
-      @current-change="(page) => updateQuery({ page })"
-    />
-
-    <FpsImportDialog v-model="fpsVisible" @imported="load" />
-  </el-card>
+      <FpsImportDialog v-model="fpsVisible" @imported="load" />
+    </el-card>
+  </div>
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.header__title {
-  margin-right: auto;
-  font-size: 16px;
-  font-weight: 600;
-}
 
 .filters {
   display: flex;

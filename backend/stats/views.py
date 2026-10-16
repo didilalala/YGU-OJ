@@ -14,7 +14,17 @@ from utils.permissions import IsTeacherOrAdmin
 
 from .export import build_class_workbook
 from .knowledge import class_knowledge
+from .overview import admin_overview
 from .service import class_overview, my_scores, work_stats
+
+
+class OverviewView(APIView):
+    """后台仪表盘：班级与学生数、进行中的作业和考试、近 14 天提交趋势、需要关注的作业。"""
+
+    permission_classes = [IsTeacherOrAdmin]
+
+    def get(self, request):
+        return Response(admin_overview(request.user))
 
 
 class ClassStatsView(APIView):

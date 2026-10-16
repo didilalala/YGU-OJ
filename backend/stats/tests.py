@@ -229,3 +229,53 @@ class MyScoresTests(StatsTestBase):
     def test_student_without_class(self):
         lonely = self.make_student("20269999", "无班级")
         self.assertEqual(self.client_for(lonely).get("/api/scores/mine").json()["data"], {"classes": []})
+
+
+class OverviewTests(StatsTestBase):
+    def get(self, user):
+        client = APIClient()
+        client.force_authenticate(user)
+        return client.get("/api/admin/stats/overview").json()["data"]
+
+    def test_summary_and_trend(self):
+        # 进行中的作业：4 名学生中 1 人已提交
+        current = Assignment.objects.create(
+            class_group=self.klass, title="本周作业", is_published=True,
+            start_time=self.now - timedelta(days=1), end_time=self.now + timedelta(days=1),
+        )
+        AssignmentProblem.objects.create(assignment=current, problem=self.p1, score=100, order=0)
+        self.submit(self.students[0], self.p1, "AC", assignment=current)
+        Submission.objects.create(user=self.students[0], problem=self.p1, language="c", code="x", result="AC", case_info=cases(4))
+
+        data = self.get(self.teacher)
+        self.assertEqual(data["summary"]["class_count"], 1)
+        # 已移出的学生不计入
+        self.assertEqual(data["summary"]["student_count"], 4)
+        self.assertEqual(data["summary"]["active_assignments"], 1)
+        self.assertEqual(data["summary"]["today_submissions"], 1)
+        self.assertEqual(len(data["trend"]), 14)
+        self.assertEqual(data["trend"][-1]["count"], 1)
+        self.assertEqual(data["trend"][-1]["accepted"], 1)
+
+    def test_attention_lists_low_submission_assignments(self):
+        current = Assignment.objects.create(
+            class_group=self.klass, title="快截止了", is_published=True,
+            start_time=self.now - timedelta(days=2), end_time=self.now + timedelta(hours=10),
+        )
+        AssignmentProblem.objects.create(assignment=current, problem=self.p1, score=100, order=0)
+        data = self.get(self.teacher)
+        titles = [row["title"] for row in data["attention"]]
+        self.assertIn("快截止了", titles)
+        row = next(row for row in data["attention"] if row["title"] == "快截止了")
+        self.assertEqual((row["submitted"], row["member_count"], row["rate"]), (0, 4, 0.0))
+
+    def test_other_teacher_sees_nothing_of_this_class(self):
+        data = self.get(self.other_teacher)
+        self.assertEqual(data["summary"]["class_count"], 0)
+        self.assertEqual(data["summary"]["student_count"], 0)
+        self.assertEqual(data["attention"], [])
+
+    def test_students_cannot_access(self):
+        client = APIClient()
+        client.force_authenticate(self.students[0])
+        self.assertEqual(client.get("/api/admin/stats/overview").status_code, 403)

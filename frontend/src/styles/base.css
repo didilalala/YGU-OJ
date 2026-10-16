@@ -1,0 +1,124 @@
+/* 全局基础样式：排版、焦点、滚动条、通用工具类 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--oj-bg);
+  color: var(--oj-text);
+  font-family: var(--oj-font-sans);
+  font-size: var(--oj-fs-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--oj-link);
+}
+
+h1,
+h2,
+h3 {
+  color: var(--oj-text);
+  line-height: 1.3;
+}
+
+code,
+pre,
+kbd,
+.mono {
+  font-family: var(--oj-font-mono);
+}
+
+kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--oj-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--oj-surface-2);
+  font-size: 12px;
+}
+
+/* 数字列等宽对齐 */
+.num,
+.el-table .num .cell {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--oj-focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--oj-navy-100);
+  color: var(--oj-navy-900);
+}
+
+html.dark ::selection {
+  background: #3a4690;
+  color: #fff;
+}
+
+/* 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--oj-border-strong) transparent;
+}
+
+.oj-container {
+  max-width: var(--oj-content-width);
+  margin: 0 auto;
+  padding: var(--oj-space-5) var(--oj-space-4) var(--oj-space-7);
+}
+
+.muted {
+  color: var(--oj-text-3);
+}
+
+.text-link {
+  color: var(--oj-link);
+  text-decoration: none;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+.surface {
+  border: 1px solid var(--oj-border);
+  border-radius: var(--oj-radius-md);
+  background: var(--oj-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 页头副标题行：状态标签 + 说明文字 */
+.head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 6px;
+  font-size: var(--oj-fs-sm);
+}

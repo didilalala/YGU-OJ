@@ -2,6 +2,10 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { examApi } from '@/api/exam'
+import LearnTabs from '@/components/LearnTabs.vue'
+import Countdown from '@/components/ui/Countdown.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import { formatScore } from '@/utils/assignment'
 import { EXAM_STATUS, RULE_LABELS } from '@/utils/exam'
 import { formatDateTime } from '@/utils/judge'
@@ -36,13 +40,16 @@ function participation(exam) {
 </script>
 
 <template>
-  <el-card v-loading="loading" shadow="never">
-    <template #header><span class="title">我的考试</span></template>
-    <el-empty v-if="!loading && !exams.length" description="暂无考试" />
+  <div>
+    <PageHeader title="我的考试" subtitle="课堂考试与已参加的竞赛" />
+    <LearnTabs />
+
+    <el-skeleton v-if="loading" animated :rows="4" />
+    <EmptyState v-else-if="!exams.length" title="暂无考试" description="老师安排考试后会显示在这里。" />
 
     <template v-for="group in groups" :key="group.key">
       <section v-if="group.items.length" class="group">
-        <h3 class="group__title">{{ group.title }}</h3>
+        <h2 class="group__title">{{ group.title }} <span class="num">{{ group.items.length }}</span></h2>
         <router-link
           v-for="exam in group.items"
           :key="exam.id"
@@ -52,7 +59,7 @@ function participation(exam) {
           <div class="exam__main">
             <div class="exam__title">
               {{ exam.title }}
-              <el-tag :type="EXAM_STATUS[exam.status].type" size="small">{{ EXAM_STATUS[exam.status].label }}</el-tag>
+              <el-tag :type="EXAM_STATUS[exam.status].type" size="small" effect="plain">{{ EXAM_STATUS[exam.status].label }}</el-tag>
             </div>
             <div class="exam__meta">
               <span>{{ exam.class_name }}</span>
@@ -60,27 +67,27 @@ function participation(exam) {
               <span>{{ formatDateTime(exam.start_time) }} 至 {{ formatDateTime(exam.end_time) }}</span>
             </div>
           </div>
-          <div class="exam__state">{{ participation(exam) }}</div>
+          <div class="exam__state">
+            <Countdown v-if="exam.status === 'in_progress'" :end="exam.end_time" />
+            <span>{{ participation(exam) }}</span>
+          </div>
         </router-link>
       </section>
     </template>
-  </el-card>
+  </div>
 </template>
 
 <style scoped>
-.title {
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .group + .group {
-  margin-top: 20px;
+  margin-top: var(--oj-space-5);
 }
 
 .group__title {
-  margin: 0 0 10px;
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
+  margin: 0 0 var(--oj-space-3);
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .exam {
@@ -88,26 +95,27 @@ function participation(exam) {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 24px;
-  margin-bottom: 10px;
-  padding: 14px 16px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-left: 3px solid var(--el-border-color);
-  border-radius: 6px;
-  background: #fff;
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--oj-border);
+  border-left: 3px solid var(--oj-border-strong);
+  border-radius: var(--oj-radius-md);
+  background: var(--oj-surface);
   color: inherit;
   text-decoration: none;
+  transition: box-shadow 0.15s;
 }
 
 .exam:hover {
-  box-shadow: var(--el-box-shadow-light);
+  box-shadow: var(--oj-shadow-sm);
 }
 
 .exam--in_progress {
-  border-left-color: var(--el-color-danger);
+  border-left-color: var(--oj-v-wa-fg);
 }
 
 .exam--not_started {
-  border-left-color: var(--oj-brand-navy);
+  border-left-color: var(--el-color-primary);
 }
 
 .exam__main {
@@ -119,21 +127,25 @@ function participation(exam) {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: var(--oj-fs-md);
   font-weight: 600;
 }
 
 .exam__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  margin-top: 6px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+  gap: 2px 16px;
+  margin-top: 4px;
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
 }
 
 .exam__state {
-  color: var(--el-text-color-regular);
-  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: var(--oj-text-2);
+  font-size: var(--oj-fs-sm);
 }
 </style>

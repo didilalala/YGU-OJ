@@ -5,25 +5,26 @@
  * 品牌橙不用于任何状态。
  */
 
+// tone 对应 tokens.css 中的 --oj-v-<tone>-fg/bg/bd；short 用于测试点色块等窄位置
 export const RESULTS = {
-  PENDING: { label: '等待评测', type: 'info' },
-  JUDGING: { label: '评测中', type: 'info' },
-  AC: { label: '通过', type: 'success' },
-  WA: { label: '答案错误', type: 'danger' },
-  TLE: { label: '超出时间限制', type: 'warning' },
-  MLE: { label: '超出内存限制', type: 'warning' },
-  RE: { label: '运行错误', type: 'danger' },
-  CE: { label: '编译错误', type: 'danger' },
-  PAC: { label: '部分正确', type: 'warning' },
-  SE: { label: '系统错误', type: 'info' },
+  PENDING: { label: '等待评测', short: '等待', type: 'info', tone: 'wait' },
+  JUDGING: { label: '评测中', short: '评测中', type: 'info', tone: 'wait' },
+  AC: { label: '通过', short: 'AC', type: 'success', tone: 'ac' },
+  WA: { label: '答案错误', short: 'WA', type: 'danger', tone: 'wa' },
+  TLE: { label: '超出时间限制', short: 'TLE', type: 'warning', tone: 'tle' },
+  MLE: { label: '超出内存限制', short: 'MLE', type: 'warning', tone: 'mle' },
+  RE: { label: '运行错误', short: 'RE', type: 'danger', tone: 're' },
+  CE: { label: '编译错误', short: 'CE', type: 'danger', tone: 'ce' },
+  PAC: { label: '部分正确', short: 'PAC', type: 'warning', tone: 'pac' },
+  SE: { label: '系统错误', short: 'SE', type: 'info', tone: 'se' },
 }
 
 export const FINISHED_RESULTS = Object.keys(RESULTS).filter((key) => !['PENDING', 'JUDGING'].includes(key))
 
 export const DIFFICULTIES = {
-  easy: { label: '简单', type: 'success' },
-  medium: { label: '中等', type: 'warning' },
-  hard: { label: '困难', type: 'danger' },
+  easy: { label: '简单', type: 'success', tone: 'ac' },
+  medium: { label: '中等', type: 'warning', tone: 'tle' },
+  hard: { label: '困难', type: 'danger', tone: 'wa' },
 }
 
 export function formatMemory(kb) {
@@ -42,4 +43,21 @@ export function passRate(problem) {
 
 export function formatDateTime(value) {
   return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '—'
+}
+
+/** 通过率的数值（0–100），无提交时为 null */
+export function passRateValue(problem) {
+  if (!problem.submission_count) return null
+  return (problem.accepted_count / problem.submission_count) * 100
+}
+
+/** 相对时间：刚刚 / 5 分钟前 / 3 小时前 / 2 天前，超过 30 天显示日期 */
+export function timeAgo(value) {
+  if (!value) return '—'
+  const diff = (Date.now() - new Date(value).getTime()) / 1000
+  if (diff < 45) return '刚刚'
+  if (diff < 3600) return `${Math.round(diff / 60)} 分钟前`
+  if (diff < 86400) return `${Math.round(diff / 3600)} 小时前`
+  if (diff < 86400 * 30) return `${Math.round(diff / 86400)} 天前`
+  return new Date(value).toLocaleDateString('zh-CN')
 }

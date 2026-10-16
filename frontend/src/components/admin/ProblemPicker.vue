@@ -9,7 +9,7 @@ import { Search } from '@element-plus/icons-vue'
 
 import { adminProblemApi } from '@/api/adminProblem'
 import { problemApi } from '@/api/problem'
-import DifficultyTag from '@/components/DifficultyTag.vue'
+import DifficultyBadge from '@/components/ui/DifficultyBadge.vue'
 import { DIFFICULTIES, passRate } from '@/utils/judge'
 import { buildKnowledgeTree } from '@/utils/knowledgeTree'
 
@@ -126,7 +126,7 @@ function confirm() {
         <template #default="{ row }">{{ row.knowledge_points.map((p) => p.name).join('、') || '—' }}</template>
       </el-table-column>
       <el-table-column label="难度" width="70">
-        <template #default="{ row }"><DifficultyTag :difficulty="row.difficulty" /></template>
+        <template #default="{ row }"><DifficultyBadge :difficulty="row.difficulty" /></template>
       </el-table-column>
       <el-table-column label="通过率" width="80">
         <template #default="{ row }">{{ passRate(row) }}</template>

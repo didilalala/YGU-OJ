@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Search, Upload } from '@element-plus/icons-vue'
 import { adminClassApi } from '@/api/classroom'
 import StudentImportDialog from '@/components/admin/StudentImportDialog.vue'
 import { formatDateTime } from '@/utils/judge'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -150,30 +151,24 @@ async function resetPasswords(rows) {
   </el-result>
 
   <div v-else-if="klass" class="class-page">
-    <el-card shadow="never">
-      <div class="class-header">
-        <el-button :icon="ArrowLeft" circle text @click="router.push({ name: 'admin-classes' })" />
-        <div>
-          <h2 class="class-header__name">{{ klass.name }}</h2>
-          <div class="class-header__meta">
-            <span v-if="klass.course">{{ klass.course }}</span>
-            <span v-if="klass.semester">{{ klass.semester }}</span>
-            <span>在班学生 {{ klass.member_count }} 人</span>
-            <span v-if="klass.teacher_name">教师：{{ klass.teacher_name }}</span>
-          </div>
+    <PageHeader :title="klass.name">
+      <template #meta>
+        <div class="head-meta muted">
+          <span v-if="klass.course">{{ klass.course }}</span>
+          <span v-if="klass.semester">{{ klass.semester }}</span>
+          <span>在班学生 {{ klass.member_count }} 人</span>
+          <span v-if="klass.teacher_name">教师：{{ klass.teacher_name }}</span>
         </div>
-        <span class="class-header__spacer" />
-        <el-button @click="router.push({ name: 'admin-stats', query: { class_id: classId } })">成绩统计</el-button>
-        <el-button @click="router.push({ name: 'admin-assignments', query: { class_id: classId } })">作业列表</el-button>
-        <el-button type="primary" plain @click="router.push({ name: 'admin-assignment-create', query: { class_id: classId } })">
-          布置作业
-        </el-button>
-        <el-button type="primary" plain @click="router.push({ name: 'admin-exam-create', query: { class_id: classId } })">
-          创建考试
-        </el-button>
-      </div>
-    </el-card>
-
+      </template>
+      <el-button @click="router.push({ name: 'admin-stats', query: { class_id: classId } })">成绩统计</el-button>
+      <el-button @click="router.push({ name: 'admin-assignments', query: { class_id: classId } })">作业列表</el-button>
+      <el-button type="primary" plain @click="router.push({ name: 'admin-assignment-create', query: { class_id: classId } })">
+        布置作业
+      </el-button>
+      <el-button type="primary" plain @click="router.push({ name: 'admin-exam-create', query: { class_id: classId } })">
+        创建考试
+      </el-button>
+    </PageHeader>
     <el-card shadow="never">
       <div class="toolbar">
         <el-input
@@ -285,28 +280,9 @@ async function resetPasswords(rows) {
   gap: 16px;
 }
 
-.class-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.class-header__spacer {
-  flex: 1;
-}
 
-.class-header__name {
-  margin: 0 0 4px;
-  font-size: 20px;
-}
 
-.class-header__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
 
 .toolbar {
   display: flex;

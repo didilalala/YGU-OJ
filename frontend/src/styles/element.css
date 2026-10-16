@@ -1,0 +1,130 @@
+/*
+ * 把设计令牌映射到 Element Plus 变量，并统一控件的圆角、描边与密度。
+ * 加载顺序：element-plus/dist/index.css → element-plus 暗色变量 → tokens.css → 本文件。
+ */
+:root {
+  --el-color-primary: #1e2a66;
+  --el-color-primary-light-3: #626a94;
+  --el-color-primary-light-5: #8f95b3;
+  --el-color-primary-light-7: #bcbfd1;
+  --el-color-primary-light-8: #d2d4e0;
+  --el-color-primary-light-9: #e9eaf0;
+  --el-color-primary-dark-2: #182252;
+
+  --el-color-success: #17803d;
+  --el-color-danger: #c9302c;
+  --el-color-warning: #b87500;
+  --el-color-info: #6b7185;
+}
+
+/* 中性色映射在亮色和暗色下都用设计令牌，覆盖 Element Plus 自带的暗色值 */
+:root,
+html.dark {
+  --el-bg-color: var(--oj-surface);
+  --el-bg-color-page: var(--oj-bg);
+  --el-bg-color-overlay: var(--oj-surface);
+  --el-text-color-primary: var(--oj-text);
+  --el-text-color-regular: var(--oj-text-2);
+  --el-text-color-secondary: var(--oj-text-3);
+  --el-border-color: var(--oj-border-strong);
+  --el-border-color-light: var(--oj-border);
+  --el-border-color-lighter: var(--oj-border);
+  --el-fill-color-light: var(--oj-surface-hover);
+  --el-fill-color-lighter: var(--oj-surface-2);
+  --el-fill-color-blank: var(--oj-surface);
+  --el-font-family: var(--oj-font-sans);
+  --el-font-size-base: var(--oj-fs-base);
+  --el-border-radius-base: var(--oj-radius-sm);
+  --el-border-radius-small: 4px;
+  --el-card-border-radius: var(--oj-radius-md);
+  --el-table-header-bg-color: var(--oj-surface-2);
+  --el-table-row-hover-bg-color: var(--oj-surface-hover);
+  --el-table-border-color: var(--oj-border);
+}
+
+html.dark {
+  --el-color-primary: #6f7fe6;
+  --el-color-primary-light-3: #5967c0;
+  --el-color-primary-light-5: #434d92;
+  --el-color-primary-light-7: #2f3668;
+  --el-color-primary-light-8: #262b55;
+  --el-color-primary-light-9: #1e2347;
+  --el-color-primary-dark-2: #8c99ee;
+  --el-color-success: #5fd38a;
+  --el-color-danger: #ff8b87;
+  --el-color-warning: #f0c25a;
+  --el-color-info: #8d93ab;
+  --el-bg-color-overlay: var(--oj-surface-2);
+}
+
+/* 卡片：默认用 1px 描边而不是阴影 */
+.el-card {
+  --el-card-padding: 20px;
+  border: 1px solid var(--oj-border);
+  background: var(--oj-surface);
+}
+
+.el-card__header {
+  font-weight: 600;
+  border-bottom-color: var(--oj-border);
+}
+
+/* 表格 */
+.el-table {
+  --el-table-header-text-color: var(--oj-text-3);
+  font-size: var(--oj-fs-base);
+}
+
+.el-table th.el-table__cell {
+  font-size: var(--oj-fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.el-table .cell {
+  line-height: 1.5;
+}
+
+.el-table td.el-table__cell {
+  padding: 14px 0;
+}
+
+/* 按钮与表单 */
+.el-button {
+  font-weight: 500;
+}
+
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text) {
+  --el-button-text-color: #fff;
+}
+
+html.dark .el-button--primary:not(.is-plain):not(.is-link):not(.is-text) {
+  --el-button-bg-color: #5a6bd8;
+  --el-button-border-color: #5a6bd8;
+  --el-button-hover-bg-color: #6f7fe6;
+  --el-button-hover-border-color: #6f7fe6;
+  --el-button-active-bg-color: #4a5ac4;
+  --el-button-active-border-color: #4a5ac4;
+}
+
+.el-button.is-link.el-button--primary,
+.el-link.el-link--primary {
+  color: var(--oj-link);
+}
+
+.el-tag {
+  border-radius: var(--oj-radius-sm);
+}
+
+.el-dialog {
+  border-radius: var(--oj-radius-md);
+  box-shadow: var(--oj-shadow-lg);
+}
+
+.el-pagination.is-background .el-pager li.is-active {
+  background-color: var(--oj-navy-700);
+}
+
+html.dark .el-pagination.is-background .el-pager li.is-active {
+  background-color: #5a6bd8;
+}

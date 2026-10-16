@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 import { judgeServerApi } from '@/api/judgeServer'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 // 判题服务器每 5 秒上报一次心跳，页面按同样频率刷新
 const REFRESH_INTERVAL = 5000
@@ -72,47 +73,48 @@ onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <template>
-  <el-card shadow="never">
-    <template #header>判题服务器</template>
-
-    <el-table v-loading="loading" :data="servers" empty-text="暂无判题服务器，启动 judge-server 后会自动注册">
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="statusOf(row).type">{{ statusOf(row).text }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="主机名 / 地址" min-width="200">
-        <template #default="{ row }">
-          <div>{{ row.hostname }}</div>
-          <div class="muted">{{ row.url }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="ip" label="IP" width="130" />
-      <el-table-column prop="judger_version" label="Judger" width="90" />
-      <el-table-column label="任务数" width="90">
-        <template #default="{ row }">{{ row.task_count }} / {{ row.max_task_count }}</template>
-      </el-table-column>
-      <el-table-column label="CPU" width="120">
-        <template #default="{ row }">{{ row.cpu_core }} 核 · {{ row.cpu_usage.toFixed(0) }}%</template>
-      </el-table-column>
-      <el-table-column label="内存" width="80">
-        <template #default="{ row }">{{ row.memory_usage.toFixed(0) }}%</template>
-      </el-table-column>
-      <el-table-column label="最近心跳" width="120">
-        <template #default="{ row }">{{ heartbeatAgo(row.last_heartbeat) }}</template>
-      </el-table-column>
-      <el-table-column label="启用" width="80">
-        <template #default="{ row }">
-          <el-switch :model-value="row.is_enabled" @change="(value) => toggle(row, value)" />
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="80">
-        <template #default="{ row }">
-          <el-button link type="danger" @click="remove(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-  </el-card>
+  <div>
+    <PageHeader title="判题服务器" subtitle="页面每 5 秒刷新一次状态，服务器启动后会自动注册" />
+    <el-card shadow="never">
+      <el-table v-loading="loading" :data="servers" empty-text="暂无判题服务器，启动 judge-server 后会自动注册">
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="statusOf(row).type">{{ statusOf(row).text }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="主机名 / 地址" min-width="200">
+          <template #default="{ row }">
+            <div>{{ row.hostname }}</div>
+            <div class="muted">{{ row.url }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="ip" label="IP" width="130" />
+        <el-table-column prop="judger_version" label="Judger" width="90" />
+        <el-table-column label="任务数" width="90">
+          <template #default="{ row }">{{ row.task_count }} / {{ row.max_task_count }}</template>
+        </el-table-column>
+        <el-table-column label="CPU" width="120">
+          <template #default="{ row }">{{ row.cpu_core }} 核 · {{ row.cpu_usage.toFixed(0) }}%</template>
+        </el-table-column>
+        <el-table-column label="内存" width="80">
+          <template #default="{ row }">{{ row.memory_usage.toFixed(0) }}%</template>
+        </el-table-column>
+        <el-table-column label="最近心跳" width="120">
+          <template #default="{ row }">{{ heartbeatAgo(row.last_heartbeat) }}</template>
+        </el-table-column>
+        <el-table-column label="启用" width="80">
+          <template #default="{ row }">
+            <el-switch :model-value="row.is_enabled" @change="(value) => toggle(row, value)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="80">
+          <template #default="{ row }">
+            <el-button link type="danger" @click="remove(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+  </div>
 </template>
 
 <style scoped>

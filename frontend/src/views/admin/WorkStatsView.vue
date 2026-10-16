@@ -10,7 +10,6 @@ import {
   ERROR_COLORS,
   ERROR_TYPES,
   INK,
-  PRIMARY_SERIES,
   barSeries,
   baseOption,
   categoryAxis,
@@ -18,6 +17,7 @@ import {
   valueAxis,
 } from '@/utils/chart'
 import { RESULTS } from '@/utils/judge'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -60,7 +60,7 @@ const distributionOption = computed(() => {
     series: [
       barSeries({
         data: buckets.map((b) => b.count),
-        itemStyle: { color: PRIMARY_SERIES, borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: INK.series, borderRadius: [4, 4, 0, 0] },
         // 只有 5 根柱，柱顶标注人数
         label: { show: true, position: 'top', color: INK.secondary, formatter: ({ value }) => (value ? `${value} 人` : '') },
       }),
@@ -86,7 +86,7 @@ const problemOption = computed(() => {
     series: [
       barSeries({
         data: problems.map((p) => p.accepted_rate),
-        itemStyle: { color: PRIMARY_SERIES, borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: INK.series, borderRadius: [4, 4, 0, 0] },
         label: { show: problems.length <= 10, position: 'top', color: INK.secondary, formatter: '{c}%' },
       }),
     ],
@@ -139,28 +139,28 @@ function errorShare(count) {
 
   <div v-else v-loading="loading" class="stats-page">
     <template v-if="data">
-      <el-card shadow="never">
-        <div class="header">
-          <div>
-            <h2 class="header__title">{{ data.title }} · 统计分析</h2>
-            <div class="muted">{{ data.class_name }} · {{ kindLabel }} · 满分 {{ data.total_score }} · 只统计在班学生</div>
+      <PageHeader :title="`${data.title} · 统计分析`">
+        <template #meta>
+          <div class="head-meta muted">
+            {{ data.class_name }} · {{ kindLabel }} · 满分 {{ data.total_score }} · 只统计在班学生
           </div>
-          <span class="header__spacer" />
-          <el-button
-            @click="
-              router.push(
-                kind === 'exam'
-                  ? { name: 'admin-exam-monitor', params: { id: data.id } }
-                  : { name: 'admin-assignment-results', params: { id: data.id } },
-              )
-            "
-          >
-            {{ kind === 'exam' ? '监考与排名' : '成绩表' }}
-          </el-button>
-          <el-button v-if="data.class_id" @click="router.push({ name: 'admin-stats', query: { class_id: data.class_id } })">
-            班级统计
-          </el-button>
-        </div>
+        </template>
+        <el-button
+          @click="
+            router.push(
+              kind === 'exam'
+                ? { name: 'admin-exam-monitor', params: { id: data.id } }
+                : { name: 'admin-assignment-results', params: { id: data.id } },
+            )
+          "
+        >
+          {{ kind === 'exam' ? '监考与排名' : '成绩表' }}
+        </el-button>
+        <el-button v-if="data.class_id" @click="router.push({ name: 'admin-stats', query: { class_id: data.class_id } })">
+          班级统计
+        </el-button>
+      </PageHeader>
+      <el-card shadow="never">
 
         <div class="tiles">
           <div class="tile">
@@ -276,21 +276,8 @@ function errorShare(count) {
   min-height: 300px;
 }
 
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
 
-.header__title {
-  margin: 0 0 4px;
-  font-size: 20px;
-}
 
-.header__spacer {
-  flex: 1;
-}
 
 .muted {
   color: var(--el-text-color-secondary);

@@ -1,0 +1,122 @@
+/*
+ * 设计令牌（design tokens）。
+ * 所有页面与组件只引用 --oj-* 令牌或 Element Plus 变量，不直接写色值。
+ * 暗色模式在 html.dark 下重写同名令牌（Element Plus 自带的暗色变量由 main.js 引入）。
+ *
+ * 品牌：藏青为主色，橙色只作点缀，评测状态不使用橙色（设计说明书 12.2）。
+ */
+:root {
+  /* ---- 品牌色 ---- */
+  --oj-navy-50: #eef0f8;
+  --oj-navy-100: #d9ddef;
+  --oj-navy-200: #b3bbdf;
+  --oj-navy-300: #8791c6;
+  --oj-navy-400: #5a67a6;
+  --oj-navy-500: #3b4a8c;
+  --oj-navy-600: #2a3878;
+  --oj-navy-700: #1e2a66;
+  --oj-navy-800: #172152;
+  --oj-navy-900: #10173a;
+  --oj-brand-navy: var(--oj-navy-700);
+  --oj-brand-orange: #ec6a0c;
+  --oj-brand-orange-deep: #c25608;
+
+  /* ---- 语义色（亮色） ---- */
+  --oj-bg: #f6f7fb;
+  --oj-surface: #ffffff;
+  --oj-surface-2: #f9fafc;
+  --oj-surface-hover: #f1f3fa;
+  --oj-border: #e4e7ef;
+  --oj-border-strong: #cfd4e2;
+  --oj-text: #1f2433;
+  --oj-text-2: #4a5165;
+  --oj-text-3: #6b7185;
+  --oj-link: var(--oj-navy-700);
+  --oj-focus: rgba(30, 42, 102, 0.28);
+  --oj-header-bg: rgba(255, 255, 255, 0.92);
+  --oj-code-bg: #f4f5fa;
+  --oj-terminal-bg: #1b1f2e;
+  --oj-terminal-text: #e8eaf2;
+  --oj-accent-bg: #fff4ec;
+  --oj-accent-border: #f6c9a6;
+  --oj-accent-text: #a14707;
+
+  /* ---- 评测状态色：前景 / 背景 / 描边 ---- */
+  --oj-v-ac-fg: #17803d;   --oj-v-ac-bg: #e8f6ed;   --oj-v-ac-bd: #b7e2c4;
+  --oj-v-wa-fg: #c9302c;   --oj-v-wa-bg: #fdecec;   --oj-v-wa-bd: #f6c3c1;
+  --oj-v-ce-fg: #9a2a7a;   --oj-v-ce-bg: #fbeaf6;   --oj-v-ce-bd: #eebbe0;
+  --oj-v-re-fg: #b4351f;   --oj-v-re-bg: #fdeee9;   --oj-v-re-bd: #f5c6b9;
+  --oj-v-tle-fg: #8a5a00;  --oj-v-tle-bg: #fdf4de;  --oj-v-tle-bd: #f0d68c;
+  --oj-v-mle-fg: #7a5a00;  --oj-v-mle-bg: #fbf1d3;  --oj-v-mle-bd: #ead27a;
+  --oj-v-pac-fg: #8a5a00;  --oj-v-pac-bg: #fdf4de;  --oj-v-pac-bd: #f0d68c;
+  --oj-v-wait-fg: #566074; --oj-v-wait-bg: #eef0f5; --oj-v-wait-bd: #d5d9e4;
+  --oj-v-se-fg: #566074;   --oj-v-se-bg: #eef0f5;   --oj-v-se-bd: #d5d9e4;
+
+  /* ---- 排版 ---- */
+  --oj-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --oj-font-mono: 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --oj-fs-xs: 12px;
+  --oj-fs-sm: 13px;
+  --oj-fs-base: 14px;
+  --oj-fs-md: 16px;
+  --oj-fs-lg: 20px;
+  --oj-fs-xl: 24px;
+  --oj-fs-2xl: 32px;
+
+  /* ---- 间距、圆角、阴影 ---- */
+  --oj-space-1: 4px;
+  --oj-space-2: 8px;
+  --oj-space-3: 12px;
+  --oj-space-4: 16px;
+  --oj-space-5: 24px;
+  --oj-space-6: 32px;
+  --oj-space-7: 48px;
+  --oj-radius-sm: 6px;
+  --oj-radius-md: 10px;
+  --oj-radius-pill: 999px;
+  --oj-shadow-sm: 0 1px 2px rgba(16, 23, 58, 0.06), 0 1px 3px rgba(16, 23, 58, 0.04);
+  --oj-shadow-md: 0 4px 12px rgba(16, 23, 58, 0.1);
+  --oj-shadow-lg: 0 12px 32px rgba(16, 23, 58, 0.16);
+
+  /* ---- 布局 ---- */
+  --oj-header-height: 60px;
+  --oj-content-width: 1200px;
+  --oj-admin-aside-width: 232px;
+  --oj-admin-aside-collapsed: 64px;
+}
+
+html.dark {
+  --oj-bg: #0e111d;
+  --oj-surface: #171b2b;
+  --oj-surface-2: #1c2134;
+  --oj-surface-hover: #222840;
+  --oj-border: #2a3049;
+  --oj-border-strong: #3a4263;
+  --oj-text: #e7e9f3;
+  --oj-text-2: #b6bbd0;
+  --oj-text-3: #8d93ab;
+  --oj-link: #a5b0ff;
+  --oj-focus: rgba(165, 176, 255, 0.35);
+  --oj-header-bg: rgba(23, 27, 43, 0.92);
+  --oj-code-bg: #11152a;
+  --oj-terminal-bg: #0b0e1a;
+  --oj-terminal-text: #dfe2ef;
+  --oj-accent-bg: #2c1f14;
+  --oj-accent-border: #6b4220;
+  --oj-accent-text: #f2a468;
+
+  --oj-v-ac-fg: #5fd38a;   --oj-v-ac-bg: #12281c;   --oj-v-ac-bd: #1f5435;
+  --oj-v-wa-fg: #ff8b87;   --oj-v-wa-bg: #301717;   --oj-v-wa-bd: #6b2d2b;
+  --oj-v-ce-fg: #f08fd0;   --oj-v-ce-bg: #2f1729;   --oj-v-ce-bd: #6b2f5a;
+  --oj-v-re-fg: #ff9d85;   --oj-v-re-bg: #301b15;   --oj-v-re-bd: #6b3425;
+  --oj-v-tle-fg: #f0c25a;  --oj-v-tle-bg: #2d2511;  --oj-v-tle-bd: #6b5520;
+  --oj-v-mle-fg: #e6c150;  --oj-v-mle-bg: #2a2310;  --oj-v-mle-bd: #66511c;
+  --oj-v-pac-fg: #f0c25a;  --oj-v-pac-bg: #2d2511;  --oj-v-pac-bd: #6b5520;
+  --oj-v-wait-fg: #a9b0c6; --oj-v-wait-bg: #202639; --oj-v-wait-bd: #353d58;
+  --oj-v-se-fg: #a9b0c6;   --oj-v-se-bg: #202639;   --oj-v-se-bd: #353d58;
+
+  --oj-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --oj-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --oj-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+}

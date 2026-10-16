@@ -7,6 +7,7 @@ import { Plus, Search } from '@element-plus/icons-vue'
 import { adminClassApi } from '@/api/classroom'
 import { useUserStore } from '@/stores/user'
 import { formatDateTime } from '@/utils/judge'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -116,91 +117,79 @@ async function remove(row) {
 </script>
 
 <template>
-  <el-card shadow="never">
-    <template #header>
-      <div class="header">
-        <span class="header__title">班级</span>
-        <el-input
-          v-model="keyword"
-          class="header__search"
-          placeholder="班级名称或课程"
-          clearable
-          :prefix-icon="Search"
-          @keyup.enter="search"
-          @clear="search"
-        />
-        <el-button type="primary" :icon="Plus" @click="openCreate">新建班级</el-button>
-      </div>
-    </template>
+  <div>
+    <PageHeader title="班级" :subtitle="total ? `共 ${total} 个班级` : ''">
+      <el-input
+        v-model="keyword"
+        class="header__search"
+        placeholder="班级名称或课程"
+        clearable
+        :prefix-icon="Search"
+        @keyup.enter="search"
+        @clear="search"
+      />
+      <el-button type="primary" :icon="Plus" @click="openCreate">新建班级</el-button>
+    </PageHeader>
+    <el-card shadow="never">
+      <el-table v-loading="loading" :data="classes" empty-text="还没有班级，点击「新建班级」开始">
+        <el-table-column label="班级" min-width="180">
+          <template #default="{ row }">
+            <router-link :to="{ name: 'admin-class-detail', params: { id: row.id } }" class="link">{{ row.name }}</router-link>
+          </template>
+        </el-table-column>
+        <el-table-column prop="course" label="课程" min-width="140" />
+        <el-table-column prop="semester" label="学期" width="130" />
+        <el-table-column prop="member_count" label="学生数" width="90" />
+        <el-table-column v-if="isAdmin" prop="teacher_name" label="教师" width="110" />
+        <el-table-column label="创建时间" width="170">
+          <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="170">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="router.push({ name: 'admin-class-detail', params: { id: row.id } })">
+              学生
+            </el-button>
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="danger" @click="remove(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-table v-loading="loading" :data="classes" empty-text="还没有班级，点击「新建班级」开始">
-      <el-table-column label="班级" min-width="180">
-        <template #default="{ row }">
-          <router-link :to="{ name: 'admin-class-detail', params: { id: row.id } }" class="link">{{ row.name }}</router-link>
+      <el-pagination
+        v-if="total > PAGE_SIZE"
+        v-model:current-page="page"
+        class="pagination"
+        layout="prev, pager, next, total"
+        :total="total"
+        :page-size="PAGE_SIZE"
+        @current-change="load"
+      />
+
+      <el-dialog v-model="dialog.visible" :title="dialog.editingId ? '编辑班级' : '新建班级'" width="460px">
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" @submit.prevent="save">
+          <el-form-item label="班级名称" prop="name">
+            <el-input v-model="form.name" maxlength="64" placeholder="如：软件工程 2601 班" />
+          </el-form-item>
+          <el-form-item label="课程">
+            <el-input v-model="form.course" maxlength="64" placeholder="如：C 语言程序设计" />
+          </el-form-item>
+          <el-form-item label="学期">
+            <el-select v-model="form.semester" filterable allow-create default-first-option class="full-width">
+              <el-option v-for="option in semesterOptions" :key="option" :label="option" :value="option" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="dialog.visible = false">取消</el-button>
+          <el-button type="primary" :loading="dialog.saving" @click="save">保存</el-button>
         </template>
-      </el-table-column>
-      <el-table-column prop="course" label="课程" min-width="140" />
-      <el-table-column prop="semester" label="学期" width="130" />
-      <el-table-column prop="member_count" label="学生数" width="90" />
-      <el-table-column v-if="isAdmin" prop="teacher_name" label="教师" width="110" />
-      <el-table-column label="创建时间" width="170">
-        <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="170">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="router.push({ name: 'admin-class-detail', params: { id: row.id } })">
-            学生
-          </el-button>
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link type="danger" @click="remove(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <el-pagination
-      v-if="total > PAGE_SIZE"
-      v-model:current-page="page"
-      class="pagination"
-      layout="prev, pager, next, total"
-      :total="total"
-      :page-size="PAGE_SIZE"
-      @current-change="load"
-    />
-
-    <el-dialog v-model="dialog.visible" :title="dialog.editingId ? '编辑班级' : '新建班级'" width="460px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" @submit.prevent="save">
-        <el-form-item label="班级名称" prop="name">
-          <el-input v-model="form.name" maxlength="64" placeholder="如：软件工程 2601 班" />
-        </el-form-item>
-        <el-form-item label="课程">
-          <el-input v-model="form.course" maxlength="64" placeholder="如：C 语言程序设计" />
-        </el-form-item>
-        <el-form-item label="学期">
-          <el-select v-model="form.semester" filterable allow-create default-first-option class="full-width">
-            <el-option v-for="option in semesterOptions" :key="option" :label="option" :value="option" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dialog.saving" @click="save">保存</el-button>
-      </template>
-    </el-dialog>
-  </el-card>
+      </el-dialog>
+    </el-card>
+  </div>
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.header__title {
-  margin-right: auto;
-  font-size: 16px;
-  font-weight: 600;
-}
 
 .header__search {
   width: 220px;

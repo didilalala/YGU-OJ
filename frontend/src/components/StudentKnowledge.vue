@@ -9,7 +9,7 @@
 import { computed, ref } from 'vue'
 
 import EChart from '@/components/EChart.vue'
-import { INK, MASTERY_THRESHOLD, PRIMARY_SERIES, baseOption, barSeries, valueAxis } from '@/utils/chart'
+import { INK, MASTERY_THRESHOLD, baseOption, barSeries, valueAxis } from '@/utils/chart'
 
 const MAX_AXES = 8
 const MIN_AXES = 3
@@ -71,9 +71,9 @@ const radarOption = computed(() => {
           {
             name: '我的掌握度',
             value: points.map((p) => p.mastery),
-            lineStyle: { color: PRIMARY_SERIES, width: 2 },
-            itemStyle: { color: PRIMARY_SERIES, borderColor: INK.surface, borderWidth: 2 },
-            areaStyle: { color: PRIMARY_SERIES, opacity: 0.1 },
+            lineStyle: { color: INK.series, width: 2 },
+            itemStyle: { color: INK.series, borderColor: INK.surface, borderWidth: 2 },
+            areaStyle: { color: INK.series, opacity: 0.1 },
             z: 3,
           },
           {
@@ -113,7 +113,7 @@ const barOption = computed(() => {
     series: [
       barSeries({
         data: points.map((p) => p.mastery),
-        itemStyle: { color: PRIMARY_SERIES, borderRadius: [0, 4, 4, 0] },
+        itemStyle: { color: INK.series, borderRadius: [0, 4, 4, 0] },
         label: { show: true, position: 'right', color: INK.secondary, formatter: '{c}%' },
       }),
     ],

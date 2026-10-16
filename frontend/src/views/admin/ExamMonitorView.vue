@@ -9,6 +9,7 @@ import RankTable from '@/components/RankTable.vue'
 import { formatScore } from '@/utils/assignment'
 import { EXAM_STATUS, RULE_LABELS, formatDuration } from '@/utils/exam'
 import { formatDateTime } from '@/utils/judge'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 // 监考数据自动刷新间隔
 const REFRESH_INTERVAL = 15 * 1000
@@ -108,27 +109,25 @@ async function reopen(row) {
 
   <div v-else v-loading="loading" class="monitor">
     <template v-if="data">
-      <el-card shadow="never">
-        <div class="header">
-          <div>
-            <h2 class="header__title">
-              {{ exam.title }}
-              <el-tag :type="EXAM_STATUS[exam.status].type" size="small">{{ EXAM_STATUS[exam.status].label }}</el-tag>
-              <el-tag v-if="!exam.is_published" type="info" size="small" effect="plain">未发布</el-tag>
-            </h2>
-            <div class="muted">
+      <PageHeader :title="exam.title">
+        <template #meta>
+          <div class="head-meta">
+            <el-tag :type="EXAM_STATUS[exam.status].type" size="small" effect="plain">{{ EXAM_STATUS[exam.status].label }}</el-tag>
+            <el-tag v-if="!exam.is_published" type="info" size="small" effect="plain">未发布</el-tag>
+            <span class="muted">
               {{ exam.class_name ?? '公开竞赛' }} · {{ RULE_LABELS[exam.rule_type] }} ·
               {{ formatDateTime(exam.start_time) }} 至 {{ formatDateTime(exam.end_time) }}
               <template v-if="exam.allowed_ip_ranges.length"> · 允许 IP：{{ exam.allowed_ip_ranges.join('、') }}</template>
               <template v-if="exam.password"> · 口令：{{ exam.password }}</template>
-            </div>
+            </span>
           </div>
-          <span class="header__spacer" />
-          <span class="time">{{ timeText }}</span>
-          <el-button :icon="Refresh" @click="load()">刷新</el-button>
-          <el-button @click="router.push({ name: 'admin-exam-stats', params: { id: examId } })">统计分析</el-button>
-          <el-button :icon="Edit" @click="router.push({ name: 'admin-exam-edit', params: { id: examId } })">编辑</el-button>
-        </div>
+        </template>
+        <span class="time">{{ timeText }}</span>
+        <el-button :icon="Refresh" @click="load()">刷新</el-button>
+        <el-button @click="router.push({ name: 'admin-exam-stats', params: { id: examId } })">统计分析</el-button>
+        <el-button :icon="Edit" @click="router.push({ name: 'admin-exam-edit', params: { id: examId } })">编辑</el-button>
+      </PageHeader>
+      <el-card shadow="never">
 
         <div class="stats">
           <div class="stat">
@@ -223,24 +222,8 @@ async function reopen(row) {
   min-height: 300px;
 }
 
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
 
-.header__title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 4px;
-  font-size: 20px;
-}
 
-.header__spacer {
-  flex: 1;
-}
 
 .time {
   margin-right: 8px;

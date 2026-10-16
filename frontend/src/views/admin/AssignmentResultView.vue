@@ -6,6 +6,7 @@ import { Edit, Refresh } from '@element-plus/icons-vue'
 import { adminAssignmentApi } from '@/api/assignment'
 import { ASSIGNMENT_STATUS, formatScore, latePolicy } from '@/utils/assignment'
 import { formatDateTime } from '@/utils/judge'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,31 +50,26 @@ function cellClass(entry, problem) {
 
   <div v-else v-loading="loading" class="result-page">
     <template v-if="data">
-      <el-card shadow="never">
-        <div class="header">
-          <div>
-            <h2 class="header__title">
-              {{ data.assignment.title }}
-              <el-tag :type="ASSIGNMENT_STATUS[data.assignment.status].type" size="small">
-                {{ ASSIGNMENT_STATUS[data.assignment.status].label }}
-              </el-tag>
-              <el-tag v-if="!data.assignment.is_published" type="info" size="small" effect="plain">未发布</el-tag>
-            </h2>
-            <div class="muted">
+      <PageHeader :title="data.assignment.title">
+        <template #meta>
+          <div class="head-meta">
+            <el-tag :type="ASSIGNMENT_STATUS[data.assignment.status].type" size="small" effect="plain">
+              {{ ASSIGNMENT_STATUS[data.assignment.status].label }}
+            </el-tag>
+            <el-tag v-if="!data.assignment.is_published" type="info" size="small" effect="plain">未发布</el-tag>
+            <span class="muted">
               {{ data.assignment.class_name }} · {{ formatDateTime(data.assignment.start_time) }} 至
               {{ formatDateTime(data.assignment.end_time) }} · {{ latePolicy(data.assignment) }}
-            </div>
+            </span>
           </div>
-          <span class="header__spacer" />
-          <el-button :icon="Refresh" @click="load">刷新</el-button>
-          <el-button @click="router.push({ name: 'admin-assignment-stats', params: { id: assignmentId } })">统计分析</el-button>
-          <el-button
-            :icon="Edit"
-            @click="router.push({ name: 'admin-assignment-edit', params: { id: assignmentId } })"
-          >
-            编辑作业
-          </el-button>
-        </div>
+        </template>
+        <el-button :icon="Refresh" @click="load">刷新</el-button>
+        <el-button @click="router.push({ name: 'admin-assignment-stats', params: { id: assignmentId } })">统计分析</el-button>
+        <el-button :icon="Edit" @click="router.push({ name: 'admin-assignment-edit', params: { id: assignmentId } })">
+          编辑作业
+        </el-button>
+      </PageHeader>
+      <el-card shadow="never">
 
         <div class="stats">
           <div class="stat">
@@ -140,24 +136,8 @@ function cellClass(entry, problem) {
   min-height: 300px;
 }
 
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
 
-.header__title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 4px;
-  font-size: 20px;
-}
 
-.header__spacer {
-  flex: 1;
-}
 
 .muted {
   color: var(--el-text-color-secondary);

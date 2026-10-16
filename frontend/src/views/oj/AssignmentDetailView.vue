@@ -4,8 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { CircleCheckFilled } from '@element-plus/icons-vue'
 
 import { assignmentApi } from '@/api/assignment'
-import DifficultyTag from '@/components/DifficultyTag.vue'
 import MarkdownView from '@/components/MarkdownView.vue'
+import DifficultyBadge from '@/components/ui/DifficultyBadge.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import StatCard from '@/components/ui/StatCard.vue'
 import { useMediaQuery } from '@/composables/useMediaQuery'
 import { ASSIGNMENT_STATUS, formatScore, latePolicy, timeLeft } from '@/utils/assignment'
 import { formatDateTime } from '@/utils/judge'
@@ -56,37 +58,32 @@ function openProblem(row) {
     </template>
   </el-result>
 
-  <div v-else v-loading="loading" class="page">
-    <template v-if="assignment">
-      <el-card shadow="never">
-        <h1 class="title">
-          {{ assignment.title }}
-          <el-tag :type="ASSIGNMENT_STATUS[assignment.status].type">{{ ASSIGNMENT_STATUS[assignment.status].label }}</el-tag>
-        </h1>
-        <div class="meta">
-          <span>{{ assignment.class_name }}</span>
-          <span>{{ formatDateTime(assignment.start_time) }} 至 {{ formatDateTime(assignment.end_time) }}</span>
-          <span>{{ latePolicy(assignment) }}</span>
-        </div>
-        <el-alert :title="deadline" :type="assignment.status === 'in_progress' ? 'info' : 'warning'" :closable="false" show-icon class="deadline" />
+  <div v-else>
+    <el-skeleton v-if="loading" animated :rows="6" />
+    <template v-else-if="assignment">
+      <PageHeader
+        :title="assignment.title"
+        :subtitle="`${assignment.class_name} · ${formatDateTime(assignment.start_time)} 至 ${formatDateTime(assignment.end_time)}`"
+        :crumbs="[{ text: '我的作业', to: '/assignments' }]"
+      >
+        <el-tag :type="ASSIGNMENT_STATUS[assignment.status].type" effect="plain">{{ ASSIGNMENT_STATUS[assignment.status].label }}</el-tag>
+      </PageHeader>
 
-        <div v-if="assignment.status !== 'not_started'" class="summary">
-          <div class="summary__item">
-            <div class="summary__value">{{ formatScore(assignment.my_score) }}</div>
-            <div class="summary__label">我的得分 / {{ assignment.total_score }}</div>
-          </div>
-          <div class="summary__item">
-            <div class="summary__value">{{ assignment.my_solved }} / {{ assignment.problem_count }}</div>
-            <div class="summary__label">已通过</div>
-          </div>
-        </div>
+      <el-alert :title="deadline" :type="assignment.status === 'in_progress' ? 'info' : 'warning'" :closable="false" show-icon class="deadline" />
+      <p class="muted policy">{{ latePolicy(assignment) }}</p>
 
-        <MarkdownView v-if="assignment.description" :content="assignment.description" class="description" />
+      <div v-if="assignment.status !== 'not_started'" class="stats">
+        <StatCard accent label="我的得分" :value="formatScore(assignment.my_score)" :unit="`/ ${assignment.total_score}`" />
+        <StatCard label="已通过" :value="assignment.my_solved" :unit="`/ ${assignment.problem_count} 题`" />
+      </div>
+
+      <el-card v-if="assignment.description" shadow="never" class="block">
+        <MarkdownView :content="assignment.description" />
       </el-card>
 
-      <el-card v-if="assignment.problems.length" shadow="never">
+      <el-card v-if="assignment.problems.length" shadow="never" class="block">
         <template #header>题目</template>
-        <p class="hint">每题取最高得分，可多次提交；部分通过按通过的测试点比例得分。</p>
+        <p class="muted hint">每题取最高得分，可多次提交；部分通过按通过的测试点比例得分。</p>
         <el-table :data="assignment.problems" class="problems" @row-click="openProblem">
           <el-table-column width="44" align="center">
             <template #default="{ row }">
@@ -98,17 +95,17 @@ function openProblem(row) {
             <template #default="{ row }">
               <router-link
                 :to="{ name: 'problem-detail', params: { id: row.problem_id }, query: { assignment: assignment.id } }"
-                class="link"
+                class="text-link"
                 @click.stop
               >
                 {{ row.title }}
               </router-link>
             </template>
           </el-table-column>
-          <el-table-column v-if="!isMobile" label="难度" width="80">
-            <template #default="{ row }"><DifficultyTag :difficulty="row.difficulty" /></template>
+          <el-table-column v-if="!isMobile" label="难度" width="90">
+            <template #default="{ row }"><DifficultyBadge :difficulty="row.difficulty" /></template>
           </el-table-column>
-          <el-table-column label="得分" width="120" align="right">
+          <el-table-column label="得分" width="130" align="right" class-name="num">
             <template #default="{ row }">
               <span :class="{ full: row.my_score >= row.score }">{{ formatScore(row.my_score) }}</span>
               <span class="muted"> / {{ row.score }}</span>
@@ -122,65 +119,29 @@ function openProblem(row) {
 </template>
 
 <style scoped>
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-height: 200px;
-}
-
-.title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-  font-size: 22px;
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
 .deadline {
-  margin-top: 12px;
+  margin-bottom: 4px;
 }
 
-.summary {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
+.policy {
+  margin: 4px 0 var(--oj-space-4);
+  font-size: var(--oj-fs-sm);
 }
 
-.summary__item {
-  padding: 10px 16px;
-  border-radius: 6px;
-  background: var(--el-fill-color-light);
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 240px));
+  gap: var(--oj-space-4);
+  margin-bottom: var(--oj-space-4);
 }
 
-.summary__value {
-  color: var(--oj-brand-navy);
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.summary__label {
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-
-.description {
-  margin-top: 16px;
+.block {
+  margin-bottom: var(--oj-space-4);
 }
 
 .hint {
   margin: 0 0 8px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+  font-size: var(--oj-fs-sm);
 }
 
 .problems :deep(.el-table__row) {
@@ -188,26 +149,17 @@ function openProblem(row) {
 }
 
 .accepted {
-  color: var(--el-color-success);
+  color: var(--oj-v-ac-fg);
   font-size: 18px;
 }
 
-.link {
-  color: var(--el-color-primary);
-  text-decoration: none;
-}
-
 .full {
-  color: var(--el-color-success);
+  color: var(--oj-v-ac-fg);
   font-weight: 600;
 }
 
-.muted {
-  color: var(--el-text-color-secondary);
-}
-
 .late-mark {
-  color: var(--el-color-warning-dark-2);
+  color: var(--oj-v-tle-fg);
   font-size: 10px;
 }
 </style>

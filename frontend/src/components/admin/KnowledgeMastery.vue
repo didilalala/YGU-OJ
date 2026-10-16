@@ -11,7 +11,6 @@ import {
   INK,
   MASTERY_STEPS,
   MASTERY_THRESHOLD,
-  PRIMARY_SERIES,
   baseOption,
   barSeries,
   masteryStep,
@@ -83,7 +82,7 @@ const barOption = computed(() => {
     series: [
       barSeries({
         data: points.map((p) => p.average_mastery),
-        itemStyle: { color: PRIMARY_SERIES, borderRadius: [0, 4, 4, 0] },
+        itemStyle: { color: INK.series, borderRadius: [0, 4, 4, 0] },
         label: { show: true, position: 'right', color: INK.secondary, formatter: '{c}%' },
         markLine: {
           symbol: 'none',

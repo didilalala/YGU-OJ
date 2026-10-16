@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 
 import { adminSettingsApi } from '@/api/system'
 import { useSiteStore } from '@/stores/site'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const site = useSiteStore()
 const loading = ref(true)
@@ -61,77 +62,63 @@ function restoreDefault(item) {
 </script>
 
 <template>
-  <el-card v-loading="loading" shadow="never" class="settings">
-    <template #header>
-      <div class="header">
-        <span class="header__title">网站参数</span>
-        <el-tag v-if="dirty" type="warning" effect="plain">有未保存的修改</el-tag>
-        <span class="header__spacer" />
-        <el-button type="primary" :loading="saving" :disabled="!dirty" @click="save">保存修改</el-button>
-      </div>
-    </template>
-    <p class="hint">修改后，学生刷新页面即可生效。各项的取值范围在输入时会检查。</p>
+  <div>
+    <PageHeader title="网站参数">
+      <el-tag v-if="dirty" type="warning" effect="plain">有未保存的修改</el-tag>
+      <el-button type="primary" :loading="saving" :disabled="!dirty" @click="save">保存修改</el-button>
+    </PageHeader>
+    <el-card v-loading="loading" shadow="never" class="settings">
+      <p class="hint">修改后，学生刷新页面即可生效。各项的取值范围在输入时会检查。</p>
 
-    <section v-for="group in groups" :key="group.title" class="group">
-      <h3 class="group__title">{{ group.title }}</h3>
-      <el-form label-position="left" label-width="200px" class="group__form">
-        <el-form-item v-for="item in group.items" :key="item.key">
-          <template #label>
-            <span class="label">
-              {{ item.label }}
-              <el-button
-                v-if="form[item.key] !== item.default"
-                link
-                type="primary"
-                size="small"
-                @click="restoreDefault(item)"
-              >
-                恢复默认
-              </el-button>
-            </span>
-          </template>
-          <div class="control">
-            <el-switch v-if="item.kind === 'bool'" v-model="form[item.key]" :active-text="form[item.key] ? '开启' : '关闭'" />
-            <el-input-number
-              v-else-if="item.kind === 'int'"
-              v-model="form[item.key]"
-              :min="item.min_value"
-              :max="item.max_value"
-              :step="1"
-              controls-position="right"
-            />
-            <el-input
-              v-else
-              v-model="form[item.key]"
-              :maxlength="item.max_length"
-              :type="item.multiline ? 'textarea' : 'text'"
-              :rows="item.multiline ? 4 : 1"
-              show-word-limit
-              class="control__text"
-            />
-            <div v-if="item.description" class="description">{{ item.description }}</div>
-          </div>
-        </el-form-item>
-      </el-form>
-    </section>
-  </el-card>
+      <section v-for="group in groups" :key="group.title" class="group">
+        <h3 class="group__title">{{ group.title }}</h3>
+        <el-form label-position="left" label-width="200px" class="group__form">
+          <el-form-item v-for="item in group.items" :key="item.key">
+            <template #label>
+              <span class="label">
+                {{ item.label }}
+                <el-button
+                  v-if="form[item.key] !== item.default"
+                  link
+                  type="primary"
+                  size="small"
+                  @click="restoreDefault(item)"
+                >
+                  恢复默认
+                </el-button>
+              </span>
+            </template>
+            <div class="control">
+              <el-switch v-if="item.kind === 'bool'" v-model="form[item.key]" :active-text="form[item.key] ? '开启' : '关闭'" />
+              <el-input-number
+                v-else-if="item.kind === 'int'"
+                v-model="form[item.key]"
+                :min="item.min_value"
+                :max="item.max_value"
+                :step="1"
+                controls-position="right"
+              />
+              <el-input
+                v-else
+                v-model="form[item.key]"
+                :maxlength="item.max_length"
+                :type="item.multiline ? 'textarea' : 'text'"
+                :rows="item.multiline ? 4 : 1"
+                show-word-limit
+                class="control__text"
+              />
+              <div v-if="item.description" class="description">{{ item.description }}</div>
+            </div>
+          </el-form-item>
+        </el-form>
+      </section>
+    </el-card>
+  </div>
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.header__title {
-  font-size: 16px;
-  font-weight: 600;
-}
 
-.header__spacer {
-  flex: 1;
-}
 
 .hint {
   margin: 0 0 8px;

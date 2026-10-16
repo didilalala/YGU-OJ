@@ -3,6 +3,10 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { assignmentApi } from '@/api/assignment'
+import LearnTabs from '@/components/LearnTabs.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import ProgressRing from '@/components/ui/ProgressRing.vue'
 import { ASSIGNMENT_STATUS, formatScore, latePolicy, timeLeft } from '@/utils/assignment'
 import { formatDateTime } from '@/utils/judge'
 
@@ -43,124 +47,174 @@ function urgent(item) {
 </script>
 
 <template>
-  <el-card shadow="never">
-    <template #header><span class="title">我的作业</span></template>
+  <div>
+    <PageHeader title="我的作业" subtitle="按截止时间完成老师布置的练习" />
+    <LearnTabs />
 
-    <el-tabs :model-value="tab" @update:model-value="(name) => router.replace({ query: { status: name } })">
-      <el-tab-pane v-for="item in TABS" :key="item.name" :label="item.label" :name="item.name" />
-    </el-tabs>
+    <div class="seg" role="tablist">
+      <button
+        v-for="item in TABS"
+        :key="item.name"
+        role="tab"
+        :aria-selected="tab === item.name"
+        :class="{ 'is-on': tab === item.name }"
+        @click="router.replace({ query: { status: item.name } })"
+      >
+        {{ item.label }}
+      </button>
+    </div>
 
-    <div v-loading="loading" class="list">
-      <el-empty v-if="!loading && !assignments.length" :description="tab === 'todo' ? '没有待完成的作业' : '暂无作业'" />
+    <div class="list">
+      <template v-if="loading"><el-skeleton v-for="n in 3" :key="n" animated :rows="2" class="assignment assignment--sk" /></template>
+      <EmptyState
+        v-else-if="!assignments.length"
+        :title="tab === 'todo' ? '没有待完成的作业' : '暂无作业'"
+        :description="tab === 'todo' ? '休息一下，或者去题库自己练练手。' : ''"
+      >
+        <el-button v-if="tab === 'todo'" type="primary" @click="router.push({ name: 'problems' })">去题库</el-button>
+      </EmptyState>
       <router-link
         v-for="item in assignments"
+        v-else
         :key="item.id"
         :to="{ name: 'assignment-detail', params: { id: item.id } }"
         class="assignment"
+        :class="{ 'assignment--urgent': urgent(item) }"
       >
+        <ProgressRing :done="item.my_solved" :total="item.problem_count" />
         <div class="assignment__main">
           <div class="assignment__title">
             {{ item.title }}
-            <el-tag :type="ASSIGNMENT_STATUS[item.status].type" size="small">{{ ASSIGNMENT_STATUS[item.status].label }}</el-tag>
+            <el-tag :type="ASSIGNMENT_STATUS[item.status].type" size="small" effect="plain">{{ ASSIGNMENT_STATUS[item.status].label }}</el-tag>
+            <span v-if="urgent(item)" class="assignment__flag">即将截止</span>
           </div>
           <div class="assignment__meta">
             <span>{{ item.class_name }}</span>
             <span>{{ item.problem_count }} 题 · 满分 {{ item.total_score }}</span>
-            <span :class="{ urgent: urgent(item) }">{{ deadlineText(item) }}</span>
+            <span>{{ deadlineText(item) }}</span>
           </div>
         </div>
-        <div v-if="item.status !== 'not_started'" class="assignment__progress">
-          <el-progress
-            :percentage="item.problem_count ? Math.round((item.my_solved / item.problem_count) * 100) : 0"
-            :stroke-width="8"
-            :show-text="false"
-            :status="item.my_solved === item.problem_count && item.problem_count ? 'success' : ''"
-          />
-          <div class="assignment__score">
-            通过 {{ item.my_solved }}/{{ item.problem_count }} · 得分
-            <strong>{{ formatScore(item.my_score) }}</strong>
-            <el-tag v-if="item.my_late" type="warning" size="small" effect="plain">含迟交</el-tag>
-          </div>
+        <div v-if="item.status !== 'not_started'" class="assignment__score">
+          <strong class="num">{{ formatScore(item.my_score) }}</strong>
+          <span>得分</span>
+          <el-tag v-if="item.my_late" type="warning" size="small" effect="plain">含迟交</el-tag>
         </div>
       </router-link>
     </div>
-  </el-card>
+  </div>
 </template>
 
 <style scoped>
-.title {
-  font-size: 16px;
-  font-weight: 600;
+.seg {
+  display: inline-flex;
+  margin-bottom: var(--oj-space-4);
+  padding: 3px;
+  border-radius: var(--oj-radius-sm);
+  background: var(--oj-surface-hover);
+}
+
+.seg button {
+  height: 30px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--oj-text-2);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.seg button.is-on {
+  background: var(--oj-surface);
+  box-shadow: var(--oj-shadow-sm);
+  color: var(--oj-text);
 }
 
 .list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 120px;
 }
 
 .assignment {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 12px 24px;
-  padding: 16px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-left: 3px solid var(--oj-brand-navy);
-  border-radius: 6px;
-  background: #fff;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--oj-border);
+  border-radius: var(--oj-radius-md);
+  background: var(--oj-surface);
   color: inherit;
   text-decoration: none;
-  transition: box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .assignment:hover {
-  box-shadow: var(--el-box-shadow-light);
+  border-color: var(--oj-border-strong);
+  box-shadow: var(--oj-shadow-sm);
+}
+
+.assignment--urgent {
+  border-color: var(--oj-accent-border);
+  background: linear-gradient(90deg, var(--oj-accent-bg), var(--oj-surface) 40%);
+}
+
+.assignment--sk {
+  display: block;
 }
 
 .assignment__main {
   flex: 1;
-  min-width: 220px;
+  min-width: 0;
 }
 
 .assignment__title {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: var(--oj-fs-md);
   font-weight: 600;
+}
+
+.assignment__flag {
+  padding: 0 8px;
+  border-radius: var(--oj-radius-pill);
+  background: var(--oj-brand-orange-deep);
+  color: #fff;
+  font-size: var(--oj-fs-xs);
+  font-weight: 600;
+  line-height: 20px;
 }
 
 .assignment__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  margin-top: 6px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
-.urgent {
-  color: var(--el-color-danger);
-}
-
-.assignment__progress {
-  width: 240px;
+  gap: 2px 16px;
+  margin-top: 4px;
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
 }
 
 .assignment__score {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  color: var(--el-text-color-regular);
-  font-size: 13px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-xs);
+}
+
+.assignment__score strong {
+  color: var(--oj-text);
+  font-size: var(--oj-fs-lg);
 }
 
 @media (max-width: 640px) {
-  .assignment__progress {
-    width: 100%;
+  .assignment {
+    flex-wrap: wrap;
   }
 }
 </style>

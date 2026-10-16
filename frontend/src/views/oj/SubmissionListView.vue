@@ -3,11 +3,14 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { submissionApi } from '@/api/submission'
-import ResultTag from '@/components/ResultTag.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import SkeletonTable from '@/components/ui/SkeletonTable.vue'
+import VerdictBadge from '@/components/ui/VerdictBadge.vue'
 import { useMediaQuery } from '@/composables/useMediaQuery'
 import { useSiteStore } from '@/stores/site'
 import { useUserStore } from '@/stores/user'
-import { RESULTS, formatDateTime, formatMemory, formatTime } from '@/utils/judge'
+import { RESULTS, formatDateTime, formatMemory, formatTime, timeAgo } from '@/utils/judge'
 
 const route = useRoute()
 const router = useRouter()
@@ -77,120 +80,115 @@ function applyProblemId() {
 </script>
 
 <template>
-  <el-card shadow="never">
-    <template #header>
-      <div class="toolbar">
-        <span class="title">{{ userStore.isStaff ? '提交记录' : '我的提交' }}</span>
-        <el-input
-          v-model="problemId"
-          class="toolbar__item"
-          placeholder="题号"
-          clearable
-          @keyup.enter="applyProblemId"
-          @clear="updateQuery({ problem_id: '' })"
-        />
-        <el-select
-          class="toolbar__item"
-          :model-value="query.result"
-          placeholder="评测结果"
-          clearable
-          @update:model-value="(v) => updateQuery({ result: v || '' })"
-        >
-          <el-option v-for="(meta, value) in RESULTS" :key="value" :label="meta.label" :value="value" />
-        </el-select>
-        <el-select
-          class="toolbar__item"
-          :model-value="query.language"
-          placeholder="语言"
-          clearable
-          @update:model-value="(v) => updateQuery({ language: v || '' })"
-        >
-          <el-option v-for="lang in site.languages" :key="lang.key" :label="lang.name" :value="lang.key" />
-        </el-select>
-      </div>
-    </template>
+  <div>
+    <PageHeader :title="userStore.isStaff ? '提交记录' : '我的提交'" :subtitle="total ? `共 ${total} 条` : ''" />
 
-    <el-table v-loading="loading" :data="submissions" empty-text="暂无提交记录">
-      <el-table-column label="编号" :width="isMobile ? 70 : 90">
-        <template #default="{ row }">
-          <router-link :to="{ name: 'submission-detail', params: { id: row.id } }" class="link">#{{ row.id }}</router-link>
-        </template>
-      </el-table-column>
-      <el-table-column label="题目" :min-width="isMobile ? 140 : 200">
-        <template #default="{ row }">
-          <router-link :to="{ name: 'problem-detail', params: { id: row.problem } }" class="link">
-            {{ row.problem }}. {{ row.problem_title }}
-          </router-link>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="userStore.isStaff && !isMobile" prop="username" label="用户" width="120" />
-      <el-table-column label="结果" :width="isMobile ? 110 : 140">
-        <template #default="{ row }">
-          <router-link :to="{ name: 'submission-detail', params: { id: row.id } }">
-            <ResultTag :result="row.result" size="small" />
-          </router-link>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="!isMobile" label="语言" width="90">
-        <template #default="{ row }">{{ site.languageName(row.language) }}</template>
-      </el-table-column>
-      <el-table-column v-if="!isMobile" label="耗时" width="90">
-        <template #default="{ row }">{{ formatTime(row.time_cost) }}</template>
-      </el-table-column>
-      <el-table-column v-if="!isMobile" label="内存" width="100">
-        <template #default="{ row }">{{ formatMemory(row.memory_cost) }}</template>
-      </el-table-column>
-      <el-table-column v-if="!isMobile" label="提交时间" width="170">
-        <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
-      </el-table-column>
-    </el-table>
+    <div class="filters">
+      <el-input
+        v-model="problemId"
+        class="filters__item"
+        placeholder="题号"
+        clearable
+        @keyup.enter="applyProblemId"
+        @clear="updateQuery({ problem_id: '' })"
+      />
+      <el-select
+        class="filters__item"
+        :model-value="query.result"
+        placeholder="评测结果"
+        clearable
+        @update:model-value="(v) => updateQuery({ result: v || '' })"
+      >
+        <el-option v-for="(meta, value) in RESULTS" :key="value" :label="meta.label" :value="value" />
+      </el-select>
+      <el-select
+        class="filters__item"
+        :model-value="query.language"
+        placeholder="语言"
+        clearable
+        @update:model-value="(v) => updateQuery({ language: v || '' })"
+      >
+        <el-option v-for="lang in site.languages" :key="lang.key" :label="lang.name" :value="lang.key" />
+      </el-select>
+    </div>
 
-    <el-pagination
-      v-if="total > PAGE_SIZE"
-      class="pagination"
-      layout="prev, pager, next, total"
-      :total="total"
-      :page-size="PAGE_SIZE"
-      :current-page="query.page"
-      @current-change="(page) => updateQuery({ page })"
-    />
-  </el-card>
+    <div class="surface">
+      <SkeletonTable v-if="loading && !submissions.length" :columns="[8, 30, 14, 10, 10, 18]" />
+      <el-table v-else :data="submissions" @row-click="(row) => router.push({ name: 'submission-detail', params: { id: row.id } })">
+        <el-table-column label="编号" :width="isMobile ? 70 : 90" class-name="num">
+          <template #default="{ row }">
+            <router-link :to="{ name: 'submission-detail', params: { id: row.id } }" class="text-link" @click.stop>#{{ row.id }}</router-link>
+          </template>
+        </el-table-column>
+        <el-table-column label="题目" :min-width="isMobile ? 140 : 200">
+          <template #default="{ row }">
+            <router-link :to="{ name: 'problem-detail', params: { id: row.problem } }" class="text-link" @click.stop>
+              {{ row.problem }}. {{ row.problem_title }}
+            </router-link>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="userStore.isStaff && !isMobile" prop="username" label="用户" width="120" />
+        <el-table-column label="结果" :width="isMobile ? 130 : 150">
+          <template #default="{ row }"><VerdictBadge :result="row.result" size="sm" /></template>
+        </el-table-column>
+        <el-table-column v-if="!isMobile" label="语言" width="90">
+          <template #default="{ row }">{{ site.languageName(row.language) }}</template>
+        </el-table-column>
+        <el-table-column v-if="!isMobile" label="耗时" width="90" align="right" class-name="num">
+          <template #default="{ row }">{{ formatTime(row.time_cost) }}</template>
+        </el-table-column>
+        <el-table-column v-if="!isMobile" label="内存" width="100" align="right" class-name="num">
+          <template #default="{ row }">{{ formatMemory(row.memory_cost) }}</template>
+        </el-table-column>
+        <el-table-column v-if="!isMobile" label="提交时间" width="170">
+          <template #default="{ row }">
+            <el-tooltip :content="formatDateTime(row.created_at)"><span class="muted">{{ timeAgo(row.created_at) }}</span></el-tooltip>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <EmptyState title="暂无提交记录" description="去题库选一道题，提交你的第一份代码。">
+            <el-button type="primary" @click="router.push({ name: 'problems' })">去题库</el-button>
+          </EmptyState>
+        </template>
+      </el-table>
+
+      <el-pagination
+        v-if="total > PAGE_SIZE"
+        class="pagination"
+        layout="prev, pager, next"
+        background
+        :total="total"
+        :page-size="PAGE_SIZE"
+        :current-page="query.page"
+        @current-change="(page) => updateQuery({ page })"
+      />
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.toolbar {
+.filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
+  gap: var(--oj-space-3);
+  margin-bottom: var(--oj-space-4);
 }
 
-.title {
-  margin-right: auto;
-  font-size: 16px;
-  font-weight: 600;
+.filters__item {
+  width: 160px;
 }
 
-.toolbar__item {
-  width: 150px;
-}
-
-.link {
-  color: var(--el-color-primary);
-  text-decoration: none;
-}
-
-.link:hover {
-  text-decoration: underline;
+:deep(.el-table__row) {
+  cursor: pointer;
 }
 
 .pagination {
   justify-content: center;
-  margin-top: 16px;
+  padding: var(--oj-space-4) 0;
 }
 
 @media (max-width: 640px) {
-  .toolbar__item {
+  .filters__item {
     width: 100%;
   }
 }

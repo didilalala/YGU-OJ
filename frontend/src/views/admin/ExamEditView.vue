@@ -8,7 +8,7 @@ import { adminClassApi } from '@/api/classroom'
 import { adminExamApi } from '@/api/exam'
 import MarkdownEditor from '@/components/admin/MarkdownEditor.vue'
 import ProblemPicker from '@/components/admin/ProblemPicker.vue'
-import DifficultyTag from '@/components/DifficultyTag.vue'
+import DifficultyBadge from '@/components/ui/DifficultyBadge.vue'
 import { RULE_LABELS, RULE_TIPS } from '@/utils/exam'
 
 const DEFAULT_SCORE = 100
@@ -292,7 +292,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
               <template #default="{ row }">{{ row.problem_id }}. {{ row.title }}</template>
             </el-table-column>
             <el-table-column label="难度" width="80">
-              <template #default="{ row }"><DifficultyTag :difficulty="row.difficulty" /></template>
+              <template #default="{ row }"><DifficultyBadge :difficulty="row.difficulty" /></template>
             </el-table-column>
             <el-table-column label="分值" width="150">
               <template #default="{ row }">
@@ -322,21 +322,22 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
 
 .page-header {
   position: sticky;
-  top: 0;
+  top: var(--oj-header-height);
   z-index: 10;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin: -20px -20px 16px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--el-border-color-light);
-  background: #f5f7fa;
+  margin: calc(var(--oj-space-5) * -1) calc(var(--oj-space-5) * -1) var(--oj-space-4);
+  padding: 12px var(--oj-space-5);
+  border-bottom: 1px solid var(--oj-border);
+  background: var(--oj-header-bg);
+  backdrop-filter: saturate(180%) blur(12px);
 }
 
 .page-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--oj-fs-lg);
 }
 
 .page-header__spacer {

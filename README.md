@@ -35,7 +35,7 @@ celery -A config worker -l info
 # 前端（另开终端），/api 会转发到 8000 端口
 cd frontend
 npm install
-npm run dev                                      # http://localhost:5173
+npm run dev                                      # http://localhost:5173，/dev/ui 预览设计令牌与组件
 ```
 
 ## 接口约定

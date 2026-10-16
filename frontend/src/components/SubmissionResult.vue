@@ -2,7 +2,9 @@
 /** 评测结果面板：总体结果、耗时与内存、编译错误信息、各测试点详情。 */
 import { computed } from 'vue'
 
-import ResultTag from '@/components/ResultTag.vue'
+import CodeBlock from '@/components/ui/CodeBlock.vue'
+import TestcaseGrid from '@/components/ui/TestcaseGrid.vue'
+import VerdictBadge from '@/components/ui/VerdictBadge.vue'
 import { formatMemory, formatTime } from '@/utils/judge'
 
 const props = defineProps({
@@ -10,113 +12,73 @@ const props = defineProps({
 })
 
 const passed = computed(() => props.submission.case_info.filter((c) => c.result === 'AC').length)
+const hasCases = computed(() => props.submission.is_finished && props.submission.case_info.length > 0)
 </script>
 
 <template>
-  <div class="submission-result">
-    <div class="summary">
-      <ResultTag :result="submission.result" size="large" />
-      <template v-if="submission.is_finished && submission.case_info.length">
-        <span>通过 {{ passed }} / {{ submission.case_info.length }} 个测试点</span>
-        <span>耗时 {{ formatTime(submission.time_cost) }}</span>
-        <span>内存 {{ formatMemory(submission.memory_cost) }}</span>
-      </template>
+  <div class="result">
+    <div class="result__summary">
+      <VerdictBadge :result="submission.result" size="lg" />
+      <dl v-if="hasCases" class="result__stats">
+        <div>
+          <dt>通过</dt>
+          <dd class="num">{{ passed }} / {{ submission.case_info.length }}</dd>
+        </div>
+        <div>
+          <dt>耗时</dt>
+          <dd class="num">{{ formatTime(submission.time_cost) }}</dd>
+        </div>
+        <div>
+          <dt>内存</dt>
+          <dd class="num">{{ formatMemory(submission.memory_cost) }}</dd>
+        </div>
+      </dl>
       <span v-else-if="!submission.is_finished" class="muted">正在评测，请稍候…</span>
     </div>
 
-    <template v-if="submission.result === 'CE'">
-      <div class="section-title">编译信息</div>
-      <pre class="error-info">{{ submission.error_info || '（无）' }}</pre>
-    </template>
-    <el-alert
-      v-else-if="submission.result === 'SE'"
-      type="info"
-      :closable="false"
-      title="判题服务暂时异常，请稍后重新提交或联系老师重判。"
+    <CodeBlock
+      v-if="submission.result === 'CE'"
+      title="编译信息"
+      variant="terminal"
+      max-height="320px"
+      :text="submission.error_info || '（无）'"
     />
-    <pre v-if="submission.result === 'SE' && submission.error_info" class="error-info">{{ submission.error_info }}</pre>
+    <template v-else-if="submission.result === 'SE'">
+      <el-alert type="info" :closable="false" title="判题服务暂时异常，请稍后重新提交或联系老师重判。" />
+      <CodeBlock v-if="submission.error_info" variant="terminal" max-height="240px" :text="submission.error_info" class="result__gap" />
+    </template>
 
-    <div v-if="submission.case_info.length" class="cases">
-      <div
-        v-for="item in submission.case_info"
-        :key="item.case"
-        class="case"
-        :class="`case--${item.result === 'AC' ? 'ok' : 'bad'}`"
-      >
-        <div class="case__index">#{{ item.case }}</div>
-        <ResultTag :result="item.result" size="small" />
-        <div class="case__meta">{{ formatTime(item.time) }} · {{ formatMemory(item.memory) }}</div>
-      </div>
-    </div>
+    <TestcaseGrid v-if="submission.case_info.length" :cases="submission.case_info" class="result__gap" />
   </div>
 </template>
 
 <style scoped>
-.summary {
+.result__summary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 20px;
+  gap: 8px 24px;
   margin-bottom: 12px;
-  color: var(--el-text-color-regular);
 }
 
-.muted {
-  color: var(--el-text-color-secondary);
-}
-
-.section-title {
-  margin: 12px 0 6px;
-  font-weight: 600;
-}
-
-.error-info {
-  max-height: 320px;
-  margin: 8px 0 0;
-  padding: 12px;
-  overflow: auto;
-  border-radius: 4px;
-  background: #1f2329;
-  color: #f2f3f5;
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.cases {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.case {
+.result__stats {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 8px 10px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-left-width: 3px;
-  border-radius: 4px;
-  background: #fff;
+  gap: 24px;
+  margin: 0;
 }
 
-.case--ok {
-  border-left-color: var(--el-color-success);
+.result__stats dt {
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-xs);
 }
 
-.case--bad {
-  border-left-color: var(--el-color-danger);
-}
-
-.case__index {
+.result__stats dd {
+  margin: 0;
+  font-size: var(--oj-fs-md);
   font-weight: 600;
 }
 
-.case__meta {
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
+.result__gap {
+  margin-top: 12px;
 }
 </style>

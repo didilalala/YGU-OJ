@@ -13,6 +13,7 @@ import { formatScore } from '@/utils/assignment'
 import { INK, TREND_COLORS, baseOption, categoryAxis, lineSeries, shortLabel, valueAxis } from '@/utils/chart'
 import { saveBlob } from '@/utils/download'
 import { formatDateTime } from '@/utils/judge'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,22 +98,20 @@ async function exportScores() {
 
 <template>
   <div v-loading="loading" class="stats-page">
+    <PageHeader title="成绩统计" subtitle="按班级查看每次作业与考试的得分、提交率和学生排名">
+      <el-select
+        :model-value="classId"
+        placeholder="选择班级"
+        class="header__class"
+        @update:model-value="(v) => router.replace({ query: { class_id: v } })"
+      >
+        <el-option v-for="item in classes" :key="item.id" :label="item.name" :value="item.id" />
+      </el-select>
+      <el-button type="primary" :icon="Download" :loading="exporting" :disabled="!data" @click="exportScores">
+        导出成绩单
+      </el-button>
+    </PageHeader>
     <el-card shadow="never">
-      <div class="header">
-        <span class="header__title">成绩统计</span>
-        <el-select
-          :model-value="classId"
-          placeholder="选择班级"
-          class="header__class"
-          @update:model-value="(v) => router.replace({ query: { class_id: v } })"
-        >
-          <el-option v-for="item in classes" :key="item.id" :label="item.name" :value="item.id" />
-        </el-select>
-        <span class="header__spacer" />
-        <el-button type="primary" :icon="Download" :loading="exporting" :disabled="!data" @click="exportScores">
-          导出成绩单
-        </el-button>
-      </div>
       <el-empty v-if="!loading && !classes.length" description="还没有班级" />
 
       <div v-if="data" class="tiles">
@@ -211,25 +210,12 @@ async function exportScores() {
   min-height: 300px;
 }
 
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
 
-.header__title {
-  font-size: 16px;
-  font-weight: 600;
-}
 
 .header__class {
   width: 220px;
 }
 
-.header__spacer {
-  flex: 1;
-}
 
 .tiles {
   display: grid;

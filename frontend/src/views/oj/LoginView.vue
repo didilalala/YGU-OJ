@@ -34,46 +34,64 @@ async function submit() {
 </script>
 
 <template>
-  <el-card class="login-card" shadow="never">
-    <h2>登录</h2>
-    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="submit">
+  <div>
+    <div class="auth-head">
+      <h2>登录</h2>
+      <p>欢迎回来，继续你的练习。</p>
+    </div>
+    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large" @submit.prevent="submit">
       <el-form-item label="账号" prop="username">
         <el-input v-model="form.username" placeholder="用户名 / 学号 / 工号 / 邮箱" autocomplete="username" />
       </el-form-item>
       <el-form-item label="密码" prop="password">
         <el-input v-model="form.password" type="password" show-password autocomplete="current-password" />
       </el-form-item>
-      <el-button type="primary" native-type="submit" :loading="loading" class="login-card__submit">登录</el-button>
+      <el-button type="primary" native-type="submit" :loading="loading" class="auth-submit">登录</el-button>
     </el-form>
-    <p class="login-card__tip">
-      在校学生的初始密码为学号后六位，首次登录需修改密码。
-      <template v-if="site.settings.allow_registration">
-        还没有账号？
-        <router-link :to="{ name: 'register', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">
-          注册
-        </router-link>
-      </template>
+    <p class="auth-hint">在校学生的初始密码为学号后六位，首次登录需修改密码。</p>
+    <p v-if="site.settings.allow_registration" class="auth-foot">
+      还没有账号？
+      <router-link :to="{ name: 'register', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">
+        立即注册
+      </router-link>
     </p>
-  </el-card>
+  </div>
 </template>
 
 <style scoped>
-.login-card {
-  max-width: 400px;
-  margin: 40px auto;
+.auth-head h2 {
+  margin: 0 0 6px;
+  font-size: var(--oj-fs-xl);
+  letter-spacing: -0.01em;
 }
 
-.login-card h2 {
-  margin-top: 0;
+.auth-head p {
+  margin: 0 0 var(--oj-space-5);
+  color: var(--oj-text-3);
 }
 
-.login-card__submit {
+.auth-submit {
   width: 100%;
+  margin-top: 4px;
 }
 
-.login-card__tip {
-  margin-bottom: 0;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+.auth-foot {
+  margin: var(--oj-space-5) 0 0;
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
+  text-align: center;
+}
+
+.auth-foot a {
+  font-weight: 600;
+}
+
+.auth-hint {
+  margin-top: var(--oj-space-4);
+  padding: 10px 12px;
+  border-radius: var(--oj-radius-sm);
+  background: var(--oj-surface-hover);
+  color: var(--oj-text-2);
+  font-size: var(--oj-fs-sm);
 }
 </style>

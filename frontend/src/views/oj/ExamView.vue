@@ -7,6 +7,8 @@ import { CircleCheckFilled, CircleCloseFilled, Lock } from '@element-plus/icons-
 import { examApi } from '@/api/exam'
 import MarkdownView from '@/components/MarkdownView.vue'
 import RankTable from '@/components/RankTable.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import StatCard from '@/components/ui/StatCard.vue'
 import { useExamStore } from '@/stores/exam'
 import { useUserStore } from '@/stores/user'
 import { formatScore } from '@/utils/assignment'
@@ -40,6 +42,9 @@ const countdown = computed(() => {
   if (exam.value.status === 'in_progress') return formatDuration((new Date(exam.value.end_time) - serverNow.value) / 1000)
   return ''
 })
+const secondsLeft = computed(() =>
+  exam.value?.status === 'in_progress' ? (new Date(exam.value.end_time) - serverNow.value) / 1000 : Infinity,
+)
 const canFinish = computed(() => exam.value?.status === 'in_progress' && exam.value.joined && !exam.value.finished)
 // 公开竞赛称「竞赛」，课堂考试称「考试」
 const noun = computed(() => (exam.value?.is_public ? '竞赛' : '考试'))
@@ -121,10 +126,11 @@ async function join() {
 }
 
 async function finish() {
-  const unsolved = exam.value.problems.filter((p) => !p.accepted).length
+  // 列出还没通过的题号，交卷前再看一眼
+  const unsolved = exam.value.problems.map((p, i) => (p.accepted ? '' : letter(i))).filter(Boolean)
   try {
     await ElMessageBox.confirm(
-      `${unsolved ? `还有 ${unsolved} 道题未通过。` : ''}交卷后不能再提交，确定交卷吗？`,
+      `${unsolved.length ? `还有 ${unsolved.length} 道题未通过：${unsolved.join('、')}。` : ''}交卷后不能再提交，确定交卷吗？`,
       '交卷',
       { type: 'warning', confirmButtonText: '交卷', cancelButtonText: '继续作答' },
     )
@@ -161,37 +167,38 @@ const letter = (index) => String.fromCharCode(65 + index)
     </template>
   </el-result>
 
-  <div v-else v-loading="loading" class="exam-page">
+  <div v-else class="exam-page">
+    <el-skeleton v-if="loading && !exam" animated :rows="8" />
     <template v-if="exam">
-      <el-card shadow="never">
-        <div class="exam-header">
-          <div class="exam-header__main">
-            <h1 class="exam-header__title">
-              {{ exam.title }}
-              <el-tag :type="EXAM_STATUS[exam.status].type">{{ EXAM_STATUS[exam.status].label }}</el-tag>
-            </h1>
-            <div class="exam-header__meta">
-              <span>{{ exam.is_public ? '公开竞赛' : exam.class_name }}</span>
-              <span v-if="exam.is_public && exam.participant_count !== null">{{ exam.participant_count }} 人参加</span>
-              <span>{{ RULE_LABELS[exam.rule_type] }} · {{ exam.problem_count }} 题 · 满分 {{ exam.total_score }}</span>
-              <span>{{ formatDateTime(exam.start_time) }} 至 {{ formatDateTime(exam.end_time) }}</span>
-            </div>
+      <section class="hero" :class="`hero--${exam.status}`">
+        <div class="hero__main">
+          <div class="hero__tags">
+            <el-tag :type="EXAM_STATUS[exam.status].type" effect="dark" size="small">{{ EXAM_STATUS[exam.status].label }}</el-tag>
+            <span>{{ exam.is_public ? '公开竞赛' : exam.class_name }}</span>
           </div>
-          <div v-if="countdown" class="countdown">
-            <div class="countdown__label">{{ exam.status === 'not_started' ? '距开考' : '剩余时间' }}</div>
-            <div class="countdown__value">{{ countdown }}</div>
+          <h1 class="hero__title">{{ exam.title }}</h1>
+          <div class="hero__meta">
+            <span>{{ RULE_LABELS[exam.rule_type] }} · {{ exam.problem_count }} 题 · 满分 {{ exam.total_score }}</span>
+            <span v-if="exam.is_public && exam.participant_count !== null">{{ exam.participant_count }} 人参加</span>
+            <span>{{ formatDateTime(exam.start_time) }} 至 {{ formatDateTime(exam.end_time) }}</span>
           </div>
         </div>
+        <div v-if="countdown" class="clock" :class="{ 'clock--danger': exam.status === 'in_progress' && secondsLeft <= 600 }">
+          <div class="clock__label">{{ exam.status === 'not_started' ? '距开考' : '剩余时间' }}</div>
+          <div class="clock__value">{{ countdown }}</div>
+        </div>
+      </section>
+
+      <el-card shadow="never" class="block">
         <p class="rule-tip">{{ RULE_TIPS[exam.rule_type] }}</p>
         <MarkdownView v-if="exam.description" :content="exam.description" />
       </el-card>
 
       <!-- 未开始 -->
-      <el-card v-if="exam.status === 'not_started'" shadow="never">
-        <el-result
-          icon="info"
+      <el-card v-if="exam.status === 'not_started'" shadow="never" class="block">
+        <EmptyState
           :title="`${noun}尚未开始`"
-          :sub-title="
+          :description="
             exam.is_public
               ? '开始后在此页面报名参加。'
               : '开考后在此页面进入考试；考试期间只能访问考试题目，不能浏览题库和历史代码。'
@@ -200,8 +207,8 @@ const letter = (index) => String.fromCharCode(65 + index)
       </el-card>
 
       <!-- 进行中，尚未进入 -->
-      <el-card v-else-if="exam.status === 'in_progress' && !exam.joined" shadow="never" class="join">
-        <h3>{{ exam.is_public ? '参加竞赛' : '进入考试' }}</h3>
+      <el-card v-else-if="exam.status === 'in_progress' && !exam.joined" shadow="never" class="block join">
+        <h2>{{ exam.is_public ? '参加竞赛' : '进入考试' }}</h2>
         <template v-if="!userStore.isLoggedIn">
           <p class="muted">登录后即可参加，普通用户与在校学生都可以参加公开竞赛。</p>
           <el-button type="primary" size="large" @click="router.push({ name: 'login', query: { redirect: route.fullPath } })">
@@ -209,46 +216,47 @@ const letter = (index) => String.fromCharCode(65 + index)
           </el-button>
         </template>
         <template v-else>
-        <p class="join__ip">
-          当前 IP：{{ exam.ip }}
-          <el-tag v-if="exam.ip_allowed" type="success" size="small" effect="plain">
-            <el-icon><CircleCheckFilled /></el-icon> 在允许范围内
-          </el-tag>
-          <el-tag v-else type="danger" size="small">
-            <el-icon><CircleCloseFilled /></el-icon> 不在允许范围内，请在指定机房参加考试
-          </el-tag>
-        </p>
-        <el-form class="join__form" @submit.prevent="join">
-          <el-form-item v-if="exam.need_password">
-            <el-input
-              v-model="password"
-              type="password"
-              show-password
-              :placeholder="exam.is_public ? '请输入竞赛口令' : '请输入监考老师公布的考试口令'"
-              :prefix-icon="Lock"
-            />
-          </el-form-item>
-          <el-button type="primary" size="large" :loading="joining" :disabled="!exam.ip_allowed" native-type="submit">
-            {{ exam.is_public ? '参加竞赛' : '进入考试' }}
-          </el-button>
-        </el-form>
+          <p class="join__ip">
+            当前 IP：<code>{{ exam.ip }}</code>
+            <el-tag v-if="exam.ip_allowed" type="success" size="small" effect="plain">
+              <el-icon><CircleCheckFilled /></el-icon> 在允许范围内
+            </el-tag>
+            <el-tag v-else type="danger" size="small">
+              <el-icon><CircleCloseFilled /></el-icon> 不在允许范围内，请在指定机房参加考试
+            </el-tag>
+          </p>
+          <el-form class="join__form" @submit.prevent="join">
+            <el-form-item v-if="exam.need_password">
+              <el-input
+                v-model="password"
+                type="password"
+                show-password
+                size="large"
+                :placeholder="exam.is_public ? '请输入竞赛口令' : '请输入监考老师公布的考试口令'"
+                :prefix-icon="Lock"
+              />
+            </el-form-item>
+            <el-button type="primary" size="large" :loading="joining" :disabled="!exam.ip_allowed" native-type="submit">
+              {{ exam.is_public ? '参加竞赛' : '进入考试' }}
+            </el-button>
+          </el-form>
         </template>
 
         <template v-if="showStandaloneRank">
-          <h3 class="rank-title">实时排名</h3>
+          <h2 class="rank-title">实时排名</h2>
           <RankTable v-if="rank" :rank="rank.rank" :problems="rank.problems" :rule-type="rank.rule_type" is-public />
         </template>
       </el-card>
 
       <!-- 已进入或已结束 -->
-      <el-card v-else shadow="never">
+      <el-card v-else shadow="never" class="block">
         <el-alert
           v-if="exam.finished && exam.status === 'in_progress'"
           type="success"
           :closable="false"
           show-icon
           :title="`你已交卷，${noun}结束并公布成绩后可查看成绩。如误交卷请联系${exam.is_public ? '出题老师' : '监考老师'}。`"
-          class="block"
+          class="alert"
         />
         <el-alert
           v-if="exam.status === 'ended' && !exam.is_score_published"
@@ -256,41 +264,33 @@ const letter = (index) => String.fromCharCode(65 + index)
           :closable="false"
           show-icon
           :title="`${noun}已结束，成绩尚未公布。`"
+          class="alert"
         />
         <div v-if="exam.status === 'ended' && exam.is_score_published" class="score">
-          <div class="score__value">{{ formatScore(exam.my_score) }}</div>
-          <div class="score__label">我的成绩 / {{ exam.total_score }}</div>
+          <StatCard accent label="我的成绩" :value="formatScore(exam.my_score)" :unit="`/ ${exam.total_score}`" />
         </div>
 
         <el-tabs v-if="exam.problems.length" v-model="tab">
           <el-tab-pane label="题目" name="problems">
-            <el-table :data="exam.problems" class="problems" @row-click="openProblem">
-              <el-table-column label="题号" width="64" align="center">
-                <template #default="{ $index }"><strong>{{ letter($index) }}</strong></template>
-              </el-table-column>
-              <el-table-column label="题目" min-width="200">
-                <template #default="{ row }">
-                  <router-link
-                    :to="{ name: 'problem-detail', params: { id: row.problem_id }, query: { exam: exam.id } }"
-                    class="link"
-                    @click.stop
-                  >
-                    {{ row.title }}
-                  </router-link>
-                </template>
-              </el-table-column>
-              <el-table-column prop="score" label="分值" width="70" align="center" />
-              <el-table-column label="状态" width="110" align="center">
-                <template #default="{ row }">
-                  <el-tag v-if="row.accepted" type="success" size="small">已通过</el-tag>
-                  <el-tag v-else-if="row.attempted" type="warning" size="small" effect="plain">已提交</el-tag>
-                  <span v-else class="muted">未提交</span>
-                </template>
-              </el-table-column>
-              <el-table-column v-if="exam.is_score_published" label="得分" width="80" align="center">
-                <template #default="{ row }">{{ formatScore(row.my_score) }}</template>
-              </el-table-column>
-            </el-table>
+            <ul class="problems">
+              <li v-for="(row, index) in exam.problems" :key="row.problem_id">
+                <router-link
+                  :to="{ name: 'problem-detail', params: { id: row.problem_id }, query: { exam: exam.id } }"
+                  class="problem"
+                  :class="{ 'is-ac': row.accepted, 'is-tried': !row.accepted && row.attempted }"
+                >
+                  <span class="problem__letter">{{ letter(index) }}</span>
+                  <span class="problem__title">{{ row.title }}</span>
+                  <span class="problem__score num">{{ row.score }} 分</span>
+                  <span class="problem__state">
+                    <el-tag v-if="row.accepted" type="success" size="small">已通过</el-tag>
+                    <el-tag v-else-if="row.attempted" type="warning" size="small" effect="plain">已提交</el-tag>
+                    <span v-else class="muted">未提交</span>
+                  </span>
+                  <span v-if="exam.is_score_published" class="problem__got num">{{ formatScore(row.my_score) }}</span>
+                </router-link>
+              </li>
+            </ul>
           </el-tab-pane>
           <el-tab-pane v-if="rankVisible" label="排名" name="rank">
             <RankTable
@@ -315,69 +315,100 @@ const letter = (index) => String.fromCharCode(65 + index)
 
 <style scoped>
 .exam-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
   min-height: 200px;
 }
 
-.exam-header {
+.hero {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  margin-bottom: var(--oj-space-4);
+  padding: 28px 32px;
+  border-radius: var(--oj-radius-md);
+  background: linear-gradient(150deg, var(--oj-navy-700), var(--oj-navy-900));
+  color: #fff;
 }
 
-.exam-header__main {
+.hero--in_progress {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(236, 106, 12, 0.3), transparent 45%),
+    linear-gradient(150deg, var(--oj-navy-700), var(--oj-navy-900));
+}
+
+.hero__main {
   flex: 1;
   min-width: 240px;
 }
 
-.exam-header__title {
+.hero__tags {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin: 0 0 8px;
-  font-size: 22px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--oj-fs-sm);
 }
 
-.exam-header__meta {
+.hero__title {
+  margin: 8px 0;
+  color: #fff;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+
+.hero__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+  gap: 4px 20px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--oj-fs-sm);
 }
 
-.countdown {
-  padding: 10px 20px;
-  border-radius: 6px;
-  background: var(--oj-brand-navy);
-  color: #fff;
+.clock {
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--oj-radius-md);
+  background: rgba(255, 255, 255, 0.08);
   text-align: center;
 }
 
-.countdown__label {
-  font-size: 12px;
+.clock--danger {
+  border-color: var(--oj-v-wa-fg);
+  background: rgba(201, 48, 44, 0.3);
+  animation: blink 1.2s infinite;
+}
+
+@keyframes blink {
+  50% {
+    background: rgba(201, 48, 44, 0.12);
+  }
+}
+
+.clock__label {
+  font-size: var(--oj-fs-xs);
   opacity: 0.8;
 }
 
-.countdown__value {
-  font-family: Consolas, Menlo, monospace;
-  font-size: 28px;
+.clock__value {
+  font-family: var(--oj-font-mono);
+  font-size: 32px;
   font-weight: 600;
   letter-spacing: 1px;
 }
 
-.rule-tip {
-  margin: 12px 0 0;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+.block {
+  margin-bottom: var(--oj-space-4);
 }
 
-.join h3 {
-  margin-top: 0;
+.rule-tip {
+  margin: 0 0 12px;
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
+}
+
+.join h2 {
+  margin: 0 0 12px;
+  font-size: var(--oj-fs-lg);
 }
 
 .join__ip {
@@ -391,45 +422,82 @@ const letter = (index) => String.fromCharCode(65 + index)
   max-width: 360px;
 }
 
-.block {
+.rank-title {
+  margin: 32px 0 12px;
+}
+
+.alert {
   margin-bottom: 12px;
 }
 
 .score {
-  display: inline-block;
-  margin: 8px 0 12px;
-  padding: 10px 20px;
-  border-radius: 6px;
-  background: var(--el-fill-color-light);
+  max-width: 260px;
+  margin-bottom: 16px;
 }
 
-.score__value {
-  color: var(--oj-brand-navy);
-  font-size: 28px;
-  font-weight: 600;
+.problems {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.score__label {
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-
-.problems :deep(.el-table__row) {
-  cursor: pointer;
-}
-
-.link {
-  color: var(--el-color-primary);
+.problem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--oj-border);
+  color: inherit;
   text-decoration: none;
 }
 
-.muted {
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+.problem:hover {
+  background: var(--oj-surface-hover);
 }
 
-.rank-title {
-  margin: 24px 0 12px;
+.problem__letter {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--oj-border-strong);
+  border-radius: var(--oj-radius-sm);
+  font-weight: 700;
+}
+
+.is-ac .problem__letter {
+  border-color: var(--oj-v-ac-bd);
+  background: var(--oj-v-ac-bg);
+  color: var(--oj-v-ac-fg);
+}
+
+.is-tried .problem__letter {
+  border-color: var(--oj-v-tle-bd);
+  background: var(--oj-v-tle-bg);
+  color: var(--oj-v-tle-fg);
+}
+
+.problem__title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.problem__score {
+  color: var(--oj-text-3);
+}
+
+.problem__state {
+  min-width: 64px;
+  text-align: center;
+}
+
+.problem__got {
+  min-width: 40px;
+  font-weight: 600;
+  text-align: right;
 }
 
 .finish {

@@ -5,8 +5,11 @@ import { useRouter } from 'vue-router'
 
 import { authApi } from '@/api/auth'
 import EChart from '@/components/EChart.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import StatCard from '@/components/ui/StatCard.vue'
+import VerdictBadge from '@/components/ui/VerdictBadge.vue'
 import { ROLE_LABELS } from '@/utils/constants'
-import { INK, PRIMARY_SERIES, barSeries, baseOption, categoryAxis, valueAxis } from '@/utils/chart'
+import { INK, barSeries, baseOption, categoryAxis, valueAxis, verdictColor } from '@/utils/chart'
 import { RESULTS, formatDateTime } from '@/utils/judge'
 
 const router = useRouter()
@@ -46,15 +49,6 @@ const profileRows = computed(() => {
 })
 
 // 提交结果分布：状态色 + 文字标签（颜色不单独承载含义）
-const RESULT_COLORS = {
-  AC: '#67C23A',
-  WA: '#F56C6C',
-  RE: '#F56C6C',
-  CE: '#F56C6C',
-  TLE: '#E6A23C',
-  MLE: '#E6A23C',
-  PAC: '#ec835a',
-}
 const resultOption = computed(() => {
   const rows = data.value.stats.distribution
   return {
@@ -69,7 +63,7 @@ const resultOption = computed(() => {
     yAxis: valueAxis({ minInterval: 1 }),
     series: [
       barSeries({
-        data: rows.map((r) => ({ value: r.count, itemStyle: { color: RESULT_COLORS[r.result], borderRadius: [4, 4, 0, 0] } })),
+        data: rows.map((r) => ({ value: r.count, itemStyle: { color: verdictColor(r.result), borderRadius: [4, 4, 0, 0] } })),
         label: { show: true, position: 'top', color: INK.secondary, formatter: ({ value }) => (value ? value : '') },
       }),
     ],
@@ -88,7 +82,7 @@ const activityOption = computed(() => {
     },
     xAxis: categoryAxis(days.map((d) => d.date.slice(5)), { axisLabel: { color: INK.muted, fontSize: 11, interval: 4 } }),
     yAxis: valueAxis({ minInterval: 1 }),
-    series: [barSeries({ data: days.map((d) => d.count), itemStyle: { color: PRIMARY_SERIES, borderRadius: [4, 4, 0, 0] } })],
+    series: [barSeries({ data: days.map((d) => d.count), itemStyle: { color: INK.series, borderRadius: [4, 4, 0, 0] } })],
   }
 })
 
@@ -102,11 +96,12 @@ function openSubmission(row) {
 </script>
 
 <template>
-  <div v-loading="loading" class="profile-page">
-    <el-result v-if="loadError" icon="warning" :title="loadError" />
+  <div class="profile-page">
+    <el-skeleton v-if="loading" animated :rows="8" />
+    <el-result v-else-if="loadError" icon="warning" :title="loadError" />
 
     <template v-else-if="data">
-      <el-card shadow="never" class="identity">
+      <section class="identity surface">
         <div class="identity__avatar">{{ avatarLetter }}</div>
         <div class="identity__main">
           <h1 class="identity__name">
@@ -123,25 +118,14 @@ function openSubmission(row) {
         <div class="identity__actions">
           <el-button @click="router.push({ name: 'submissions' })">提交记录</el-button>
           <el-button v-if="data.profile.role === 'student'" @click="router.push({ name: 'my-scores' })">我的成绩</el-button>
+          <el-button @click="router.push({ name: 'change-password' })">修改密码</el-button>
         </div>
-      </el-card>
+      </section>
 
       <div class="tiles">
-        <div class="tile">
-          <div class="tile__label">已通过题目</div>
-          <div class="tile__value">{{ data.stats.solved_problems }} <span class="tile__of">/ {{ data.stats.visible_problems }}</span></div>
-          <div class="tile__sub">尝试过 {{ data.stats.attempted_problems }} 题</div>
-        </div>
-        <div class="tile">
-          <div class="tile__label">提交次数</div>
-          <div class="tile__value">{{ data.stats.submitted }}</div>
-          <div class="tile__sub">已完成评测的提交</div>
-        </div>
-        <div class="tile">
-          <div class="tile__label">通过率</div>
-          <div class="tile__value">{{ data.stats.accept_rate }}%</div>
-          <div class="tile__sub">通过 {{ data.stats.accepted }} 次</div>
-        </div>
+        <StatCard accent label="已通过题目" :value="data.stats.solved_problems" :unit="`/ ${data.stats.visible_problems}`" :hint="`尝试过 ${data.stats.attempted_problems} 题`" />
+        <StatCard label="提交次数" :value="data.stats.submitted" hint="已完成评测的提交" />
+        <StatCard label="通过率" :value="data.stats.accept_rate" unit="%" :hint="`通过 ${data.stats.accepted} 次`" />
       </div>
 
       <div class="grid">
@@ -150,14 +134,9 @@ function openSubmission(row) {
           <div v-for="level in data.stats.by_difficulty" :key="level.difficulty" class="level">
             <div class="level__head">
               <span>{{ level.label }}</span>
-              <span class="muted">{{ level.solved }} / {{ level.total }}</span>
+              <span class="muted num">{{ level.solved }} / {{ level.total }}</span>
             </div>
-            <el-progress
-              :percentage="percentFor(level)"
-              :stroke-width="10"
-              :show-text="false"
-              :color="PRIMARY_SERIES"
-            />
+            <el-progress :percentage="percentFor(level)" :stroke-width="10" :show-text="false" :color="INK.series" />
           </div>
         </el-card>
 
@@ -174,12 +153,7 @@ function openSubmission(row) {
             </el-table-column>
             <el-table-column prop="count" label="次数" align="right" />
           </el-table>
-          <EChart
-            v-else
-            :option="resultOption"
-            height="240px"
-            label="提交结果分布柱状图，按评测结果分类计数"
-          />
+          <EChart v-else :option="resultOption" height="240px" label="提交结果分布柱状图，按评测结果分类计数" />
         </el-card>
       </div>
 
@@ -199,13 +173,13 @@ function openSubmission(row) {
 
       <el-card shadow="never">
         <template #header>最近提交</template>
-        <el-empty v-if="!data.stats.recent.length" description="还没有提交记录" :image-size="60" />
-        <el-table v-else :data="data.stats.recent" size="small" class="recent" @row-click="openSubmission">
+        <EmptyState v-if="!data.stats.recent.length" compact title="还没有提交记录" />
+        <el-table v-else :data="data.stats.recent" class="recent" @row-click="openSubmission">
           <el-table-column label="题目" min-width="180">
             <template #default="{ row }">{{ row.problem_title }}</template>
           </el-table-column>
-          <el-table-column label="结果" width="120">
-            <template #default="{ row }">{{ RESULTS[row.result].label }}</template>
+          <el-table-column label="结果" width="150">
+            <template #default="{ row }"><VerdictBadge :result="row.result" size="sm" /></template>
           </el-table-column>
           <el-table-column label="提交时间" width="170">
             <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
@@ -220,7 +194,7 @@ function openSubmission(row) {
 .profile-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--oj-space-4);
   min-height: 200px;
 }
 
@@ -229,6 +203,7 @@ function openSubmission(row) {
   flex-wrap: wrap;
   gap: 20px;
   align-items: flex-start;
+  padding: var(--oj-space-5);
 }
 
 .identity__avatar {
@@ -239,10 +214,14 @@ function openSubmission(row) {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: var(--oj-brand-navy);
+  background: var(--oj-navy-700);
   color: #fff;
   font-size: 30px;
   font-weight: 600;
+}
+
+html.dark .identity__avatar {
+  background: #5a6bd8;
 }
 
 .identity__main {
@@ -255,7 +234,7 @@ function openSubmission(row) {
   align-items: center;
   gap: 8px;
   margin: 0 0 8px;
-  font-size: 22px;
+  font-size: var(--oj-fs-xl);
 }
 
 .identity__facts {
@@ -263,62 +242,32 @@ function openSubmission(row) {
   grid-template-columns: auto 1fr;
   gap: 4px 16px;
   margin: 0;
-  font-size: 14px;
 }
 
 .identity__facts dt {
-  color: var(--el-text-color-secondary);
+  color: var(--oj-text-3);
 }
 
 .identity__facts dd {
   margin: 0;
-  color: var(--el-text-color-primary);
 }
 
 .identity__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.tile {
-  padding: 12px 16px;
-  border-radius: 6px;
-  background: var(--el-fill-color-light);
-}
-
-.tile__label {
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
-.tile__value {
-  margin-top: 4px;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.tile__of {
-  color: var(--el-text-color-secondary);
-  font-size: 16px;
-  font-weight: normal;
-}
-
-.tile__sub {
-  margin-top: 2px;
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--oj-space-4);
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 16px;
+  gap: var(--oj-space-4);
 }
 
 .card-header {
@@ -335,12 +284,6 @@ function openSubmission(row) {
   display: flex;
   justify-content: space-between;
   margin-bottom: 4px;
-  font-size: 14px;
-}
-
-.muted {
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
 }
 
 .recent :deep(.el-table__row) {
@@ -350,6 +293,10 @@ function openSubmission(row) {
 @media (max-width: 640px) {
   .identity__actions {
     width: 100%;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

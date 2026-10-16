@@ -4,6 +4,9 @@ import { computed, onMounted, ref } from 'vue'
 import { Lock } from '@element-plus/icons-vue'
 
 import { examApi } from '@/api/exam'
+import Countdown from '@/components/ui/Countdown.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import { EXAM_STATUS, RULE_LABELS } from '@/utils/exam'
 import { formatDateTime } from '@/utils/judge'
 
@@ -33,13 +36,15 @@ function myState(contest) {
 </script>
 
 <template>
-  <el-card v-loading="loading" shadow="never">
-    <template #header><span class="title">竞赛</span></template>
-    <el-empty v-if="!loading && !contests.length" description="暂无公开竞赛" />
+  <div>
+    <PageHeader title="竞赛" subtitle="公开竞赛所有人可浏览，登录后参加" />
+
+    <el-skeleton v-if="loading" animated :rows="4" />
+    <EmptyState v-else-if="!contests.length" title="暂无公开竞赛" description="有新的竞赛时会显示在这里。" />
 
     <template v-for="group in groups" :key="group.key">
       <section v-if="group.items.length" class="group">
-        <h3 class="group__title">{{ group.title }}</h3>
+        <h2 class="group__title">{{ group.title }} <span class="num">{{ group.items.length }}</span></h2>
         <router-link
           v-for="contest in group.items"
           :key="contest.id"
@@ -49,7 +54,7 @@ function myState(contest) {
           <div class="contest__main">
             <div class="contest__title">
               {{ contest.title }}
-              <el-tag :type="EXAM_STATUS[contest.status].type" size="small">{{ EXAM_STATUS[contest.status].label }}</el-tag>
+              <el-tag :type="EXAM_STATUS[contest.status].type" size="small" effect="plain">{{ EXAM_STATUS[contest.status].label }}</el-tag>
               <el-tag v-if="contest.need_password" size="small" effect="plain" type="info">
                 <el-icon><Lock /></el-icon> 需口令
               </el-tag>
@@ -60,27 +65,27 @@ function myState(contest) {
               <span>{{ contest.participant_count }} 人参加</span>
             </div>
           </div>
-          <div v-if="myState(contest)" class="contest__state">{{ myState(contest) }}</div>
+          <div class="contest__state">
+            <Countdown v-if="contest.status === 'in_progress'" :end="contest.end_time" />
+            <span v-if="myState(contest)">{{ myState(contest) }}</span>
+          </div>
         </router-link>
       </section>
     </template>
-  </el-card>
+  </div>
 </template>
 
 <style scoped>
-.title {
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .group + .group {
-  margin-top: 20px;
+  margin-top: var(--oj-space-5);
 }
 
 .group__title {
-  margin: 0 0 10px;
-  color: var(--el-text-color-secondary);
-  font-size: 14px;
+  margin: 0 0 var(--oj-space-3);
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .contest {
@@ -88,26 +93,27 @@ function myState(contest) {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 24px;
-  margin-bottom: 10px;
-  padding: 14px 16px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-left: 3px solid var(--el-border-color);
-  border-radius: 6px;
-  background: #fff;
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--oj-border);
+  border-left: 3px solid var(--oj-border-strong);
+  border-radius: var(--oj-radius-md);
+  background: var(--oj-surface);
   color: inherit;
   text-decoration: none;
+  transition: box-shadow 0.15s;
 }
 
 .contest:hover {
-  box-shadow: var(--el-box-shadow-light);
+  box-shadow: var(--oj-shadow-sm);
 }
 
 .contest--in_progress {
-  border-left-color: var(--el-color-danger);
+  border-left-color: var(--oj-v-wa-fg);
 }
 
 .contest--not_started {
-  border-left-color: var(--oj-brand-navy);
+  border-left-color: var(--el-color-primary);
 }
 
 .contest__main {
@@ -120,7 +126,7 @@ function myState(contest) {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: var(--oj-fs-md);
   font-weight: 600;
 }
 
@@ -133,14 +139,17 @@ function myState(contest) {
 .contest__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  margin-top: 6px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+  gap: 2px 16px;
+  margin-top: 4px;
+  color: var(--oj-text-3);
+  font-size: var(--oj-fs-sm);
 }
 
 .contest__state {
-  color: var(--el-text-color-regular);
-  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--oj-text-2);
+  font-size: var(--oj-fs-sm);
 }
 </style>

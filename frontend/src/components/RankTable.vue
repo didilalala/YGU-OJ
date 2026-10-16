@@ -34,6 +34,7 @@ function cellClass(entry, problem, ruleType) {
     :data="rank"
     size="small"
     border
+    class="num"
     empty-text="还没有人上榜"
     :row-class-name="({ row }) => (row.user_id === highlightUserId ? 'row--me' : '')"
   >
@@ -84,19 +85,19 @@ function cellClass(entry, problem, ruleType) {
 }
 
 .cell--ok {
-  background: var(--el-color-success-light-8);
-  color: var(--el-color-success-dark-2);
+  background: var(--oj-v-ac-bg);
+  color: var(--oj-v-ac-fg);
   font-weight: 600;
 }
 
 .cell--partial {
-  background: var(--el-color-warning-light-8);
-  color: var(--el-color-warning-dark-2);
+  background: var(--oj-v-tle-bg);
+  color: var(--oj-v-tle-fg);
 }
 
 .cell--bad {
-  background: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
+  background: var(--oj-v-wa-bg);
+  color: var(--oj-v-wa-fg);
 }
 
 .cell__time {

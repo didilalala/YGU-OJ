@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useExamStore } from '@/stores/exam'
 import { useUserStore } from '@/stores/user'
 import { ROLES, STAFF_ROLES } from '@/utils/constants'
+import AuthLayout from '@/components/layout/AuthLayout.vue'
 import OjLayout from '@/components/layout/OjLayout.vue'
 
 /**
@@ -17,7 +18,6 @@ const routes = [
     component: OjLayout,
     children: [
       { path: '', name: 'home', component: () => import('@/views/oj/HomeView.vue'), meta: { title: '首页' } },
-      { path: 'login', name: 'login', component: () => import('@/views/oj/LoginView.vue'), meta: { title: '登录' } },
       {
         path: 'profile',
         name: 'profile',
@@ -25,22 +25,10 @@ const routes = [
         meta: { title: '个人主页', requiresAuth: true },
       },
       {
-        path: 'register',
-        name: 'register',
-        component: () => import('@/views/oj/RegisterView.vue'),
-        meta: { title: '注册' },
-      },
-      {
         path: 'bind-student',
         name: 'bind-student',
         component: () => import('@/views/oj/BindStudentView.vue'),
         meta: { title: '绑定学号', requiresAuth: true },
-      },
-      {
-        path: 'change-password',
-        name: 'change-password',
-        component: () => import('@/views/oj/ChangePasswordView.vue'),
-        meta: { title: '修改密码', requiresAuth: true },
       },
       { path: '403', name: 'forbidden', component: () => import('@/views/oj/ForbiddenView.vue'), meta: { title: '无权访问' } },
       {
@@ -54,7 +42,8 @@ const routes = [
         path: 'problems/:id(\\d+)',
         name: 'problem-detail',
         component: () => import('@/views/oj/ProblemDetailView.vue'),
-        meta: { title: '题目' },
+        // bleed：做题页铺满视口，自己管理滚动
+        meta: { title: '题目', bleed: true },
       },
       {
         path: 'submissions',
@@ -117,6 +106,21 @@ const routes = [
         name: 'contest-detail',
         component: () => import('@/views/oj/ExamView.vue'),
         meta: { title: '竞赛' },
+      },
+    ],
+  },
+  {
+    // 登录、注册、修改密码：左右分栏的独立布局。必须排在 OjLayout 之后，否则 / 会先匹配到它
+    path: '/',
+    component: AuthLayout,
+    children: [
+      { path: 'login', name: 'login', component: () => import('@/views/oj/LoginView.vue'), meta: { title: '登录' } },
+      { path: 'register', name: 'register', component: () => import('@/views/oj/RegisterView.vue'), meta: { title: '注册' } },
+      {
+        path: 'change-password',
+        name: 'change-password',
+        component: () => import('@/views/oj/ChangePasswordView.vue'),
+        meta: { title: '修改密码', requiresAuth: true },
       },
     ],
   },
@@ -268,6 +272,16 @@ const routes = [
 
 // 考试期间不能访问的页面
 const EXAM_LOCKED_ROUTES = ['problems', 'problem-detail', 'my-assignments', 'assignment-detail', 'my-scores']
+
+// 组件与令牌预览页，只在开发环境注册
+if (import.meta.env.DEV) {
+  routes.unshift({
+    path: '/dev/ui',
+    name: 'dev-ui',
+    component: () => import('@/views/dev/UiKitView.vue'),
+    meta: { title: 'UI Kit' },
+  })
+}
 
 const router = createRouter({
   history: createWebHistory(),
